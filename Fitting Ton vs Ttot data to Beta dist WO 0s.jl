@@ -2,29 +2,29 @@ using Catalyst, DifferentialEquations, Plots, Interpolations
 using Statistics, Distributions, StatsBase
 using CSV, DataFrames, BenchmarkTools, HypothesisTests
 
-df = CSV.read("z://Julia Programs//Promoter Statistics//Results//combined_Ton_vs_Ttot60.csv", DataFrame)
-data_array = Matrix(df)
-data_array_filtered = filter(!iszero, vec(data_array))
+df = CSV.read("z://Julia Programs//Promoter Statistics//Results//combined_Ton_vs_Ttot60.csv", DataFrame);
+data_array = Matrix(df);
+data_array_filtered = filter(!iszero, vec(data_array));
 # Calculate mean and mode
 mean_Ton_vs_Ttot_sims = round(mean(data_array_filtered),digits=6);
 mode_Ton_vs_Ttot_sims = round(StatsBase.mode(data_array_filtered),digits=6);
 stddev_Ton_vs_Ttot_sims = round(std(data_array_filtered), digits=6);
 
-fit_beta = fit(Beta, data_array_filtered)
-x_values=range(0,1, length = length(data_array_filtered))
+fit_beta = fit(Beta, data_array_filtered);
+x_values=range(0,1, length = length(data_array_filtered));
 gen_beta_dis = rand(fit_beta, length(data_array_filtered));
 # Define the number of bins
-num_bins = 20
+num_bins = 20;
 
 # Calculate the bin width based on the range of the data
-data_range = maximum(gen_beta_dis) - minimum(gen_beta_dis)
-bin_width = data_range / num_bins
+data_range = maximum(gen_beta_dis) - minimum(gen_beta_dis);
+bin_width = data_range / num_bins;
 
 # Calculate the bin edges
-bin_edges = LinRange(minimum(gen_beta_dis) - bin_width / 2, maximum(gen_beta_dis) + bin_width / 2, num_bins + 1)
+bin_edges = LinRange(minimum(gen_beta_dis) - bin_width / 2, maximum(gen_beta_dis) + bin_width / 2, num_bins + 1);
 
 # Initialize an array to store bin counts
-bin_counts = zeros(Int, num_bins)
+bin_counts = zeros(Int, num_bins);
 
 # Iterate over the data and count the number of values in each bin
 for val in gen_beta_dis
@@ -33,15 +33,18 @@ for val in gen_beta_dis
         bin_index -= 1  # Adjust for values at the upper edge
     end
     bin_counts[bin_index] += 1
-end
+end;
 
 # Normalize the counts to represent relative frequencies
-total_observations = sum(bin_counts)
-normalized_values = bin_counts / total_observations
-beta_x_values = range(0,1, length = length(normalized_values))
+total_observations = sum(bin_counts);
+normalized_values = bin_counts / total_observations;
+beta_x_values = range(0,1, length = length(normalized_values));
+# Perform the Kolmogorov-Smirnov (KS) test
+ks_test = ApproximateTwoSampleKSTest(gen_beta_dis, vec(data_array));
+# Extract the p-value from the test result
+p_value_ks = round.(pvalue(ks_test), digits=8);
 
-
-Plots.histogram(data_array_filtered, xlabel="Ton / Ttot", ylabel="PDF", bins=:20, title="Fitted Histogram of Ton / Ttot\n 60 min intervals (200 sims)",
+Plots.histogram(data_array_filtered, xlabel="Ton / Ttot", ylabel="PDF", bins=:20, title="Fitted Histogram of Ton / Ttot\n 60 min intervals (200 sims)\n0's removed",
     label="Simulated Ton/Ttot Data", size = (800,800), normalize=:probability);
 histogram!(gen_beta_dis,bins=:20, normalize=:probability, color=:red, alpha=0.5,label="Beta Distributed Fit");
 plot!(beta_x_values, normalized_values, color=:green, label="beta fit");
@@ -51,9 +54,10 @@ vline!([mode_Ton_vs_Ttot_sims], label="Mode", color=:purple, linewidth=2, linest
 
 
 # Print mean and mode values on the histogram
-annotate!([(0.9, 0.7, text("Mean: $mean_Ton_vs_Ttot_sims", :red)),
-            (0.9, 0.68, text("Mode: $mode_Ton_vs_Ttot_sims", :purple)),
-            (0.9, 0.66, text("Std: $stddev_Ton_vs_Ttot_sims", :blue))]);
+annotate!([(0.83, 0.1, text("Mean: $mean_Ton_vs_Ttot_sims", :red)),
+            (0.83, 0.095, text("Mode: $mode_Ton_vs_Ttot_sims", :purple)),
+            (0.83, 0.090, text("Std: $stddev_Ton_vs_Ttot_sims", :blue)),
+            (0.83, 0.085, text("KS Test P = $p_value_ks"))]);
 
 plot!()
 
