@@ -51,12 +51,12 @@ histogram!(gen_beta_dis,bins=:20, normalize=:probability, color=:red, alpha=0.5,
 plot!(beta_x_values, normalized_values, color=:green, label="beta fit");
 
 vline!([mean_Ton_vs_Ttot_sims], label="Mean", color=:red, linewidth=2, linestyle=:dash);
-vline!([mode_Ton_vs_Ttot_sims], label="Mode", color=:purple, linewidth=2, linestyle=:dash);
+vline!([mode_Ton_vs_Ttot_sims], label="Mode", color=:orange, linewidth=2, linestyle=:dash);
 
 
 # Print mean and mode values on the histogram
 annotate!([(0.83, 0.1, text("Mean: $mean_Ton_vs_Ttot_sims", :red)),
-            (0.83, 0.095, text("Mode: $mode_Ton_vs_Ttot_sims", :purple)),
+            (0.83, 0.095, text("Mode: $mode_Ton_vs_Ttot_sims", :orange)),
             (0.83, 0.090, text("Std: $stddev_Ton_vs_Ttot_sims", :blue)),
             (0.83, 0.085, text("KS Test P = $p_value_ks"))]);
 
