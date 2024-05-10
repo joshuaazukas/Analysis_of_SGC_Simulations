@@ -93,11 +93,12 @@ end;
 # Define the bin centers for plotting
 bin_centers = collect(min_value : bin_width : max_value);
 # Plot the histogram
-bar(bin_centers, bin_counts, xlabel="Time", ylabel="Count", title="Histogram of Time Points",
- legend=false, size=(1200, 800),)
+bar(bin_centers, bin_counts, xlabel="Time [hrs]", ylabel="frequencey", title="number of points per 20 min of 72 hour sim",
+ legend=false,)
 # Compute the average number of reactions per interval
 average_reactions_per_interval = mean(bin_counts);
 
+plot(sol.t[1:50], title = "time of simulation", xlabel="# of reaction", ylabel="Time [Hrs]")
 # Compute the standard deviation of the number of reactions per interval
 stddev_reactions_per_interval = std(bin_counts);
 # Display the result as the average plus or minus the standard deviation
@@ -133,7 +134,7 @@ end
 
 int_in_min = round.(bin_width*60, digits=2)
 subm_plot = 2
-
+length(sub_matrices[1][1])
 plot(sub_matrices[subm_plot], title= "Sub-Inteval$subm_plot\n $int_in_min Min Window of 72hr simulation", 
 xlabel = "time [hrs]", legend=false, ylabel="Promoter State (1 = active)")
 
