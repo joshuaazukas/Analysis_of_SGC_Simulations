@@ -1,6 +1,9 @@
 using Catalyst, DifferentialEquations, Plots, Interpolations
 using Statistics, Distributions, StatsBase
 using CSV, DataFrames, BenchmarkTools, Base.Threads
+experimental_data = CSV.read("Z://Gene regulatory network Simulations//Example.csv", DataFrame);
+observed_data = experimental_data[!,2];
+plot(experimental_data[:, 1], observed_data, seriestype=:scatter, label="Dox Induced Experimental Time Trace", xlabel="Time (Hrs)", ylabel="# of GFP Molecules (Converted from A.u.)", color =:red, legend=:bottomright)
 
 @parameters kOn kOff kOnt kOfft k kT deg_R deg_G;
 @variables t;
@@ -21,16 +24,9 @@ rxs = [
 
 tspan = (0.0, 72); # reaction time span
 u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 100000, GFP => 1000000];  # starting conditions
-p = [kOn => 10, kOff => 10, kOnt=> 0.000001, kOfft=> 100000, k => 3, kT => 1.5, deg_R => 0.03, deg_G => 0.008];
+p = [kOn => 10, kOff => 10, kOnt=> 0, kOfft=> 0, k => 3, kT => 1.5, deg_R => 0.03, deg_G => 0.008];
 @named rn = ReactionSystem(rxs, t, [A, DNA, A_DNA, DNA_T, A_DNA_T, RNA, GFP], [kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G]);
-kOn = 10;
-kOff = 10;
-kOnt= 0.000001;
-kOfft= 100000;
-k = 3;
-kT = 1.5;
-deg_R = 0.03;
-deg_G = 0.008;
+
 num_simulations = 3;
 T_of_sims = [];
 A_DNA_sims = [];
@@ -47,7 +43,7 @@ T_A_DNA =[];
 bin_width = 0.3333; #also change in line 73
 bin_width_min = Int(round.(bin_width * 60, digits = 1))
 @time begin
-    @threads for i in 1:num_simulations;
+    for i in 1:num_simulations;
 
         T_A_DNA =[];
         dprob = DiscreteProblem(rn, u0, tspan, p)
@@ -57,7 +53,7 @@ bin_width_min = Int(round.(bin_width * 60, digits = 1))
         
         T_A_DNA = (sol.t, sol[3,:]);
 
-        T_GPF = (Float32(sol.t), Float32(sol[7,:]));
+        T_GPF = ((sol.t), (sol[7,:]));
 
         # Initialize an empty array to store the individual matrices
         sub_matrices = [];

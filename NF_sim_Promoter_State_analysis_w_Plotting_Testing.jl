@@ -21,7 +21,7 @@ rxs = [
 
 tspan = (0.0, 72); # reaction time span
 u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 100000, GFP => 1000000];  # starting conditions
-p = [kOn => 10, kOff => 10, kOnt=> 0.000001, kOfft=> 100000, k => 3, kT => 1.5, deg_R => 0.03, deg_G => 0.008]
+p = [kOn => 10, kOff => 10, kOnt=> 10, kOfft=> 10, k => 3, kT => 1.5, deg_R => 0.03, deg_G => 0.008]
 
 @named rn = ReactionSystem(rxs, t, [A, DNA, A_DNA, DNA_T, A_DNA_T, RNA, GFP], [kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G]);
 
@@ -47,16 +47,17 @@ on_state_durations = Vector{Float64}(undef, num_simulations)
 bin_width = 0.3333;
 @time begin
     for i in 1:num_simulations;
-
+        GFP=[];
         T_A_DNA =[];
         A_DNA = [];
         dprob = DiscreteProblem(rn, u0, tspan, p)
         jprob = JumpProblem(rn, dprob, Direct())
 
         sol = solve(jprob, SSAStepper())
+        GFP = sol[7,:]
         A_DNA = sol[3,:]
         T_A_DNA = (sol.t, A_DNA);
-
+        push!(GFP_sims, GFP)
         # Initialize an empty array to store the individual matrices
         sub_matrices = [];
         on_state_durations = [];

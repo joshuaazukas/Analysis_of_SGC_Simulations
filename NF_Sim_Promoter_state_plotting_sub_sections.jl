@@ -21,7 +21,7 @@ rxs = [
 
 tspan = (0.0, 72); # reaction time span
 u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 100000, GFP => 1000000];  # starting conditions
-p = [kOn => 10, kOff => 10, kOnt=> 0.000001, kOfft=> 100000, k => 3, kT => 1.5, deg_R => 0.03, deg_G => 0.008]
+p = [kOn => 10, kOff => 10, kOnt=> 10, kOfft=> 10, k => 3, kT => 1.5, deg_R => 0.03, deg_G => 0.008]
 
 @named rn = ReactionSystem(rxs, t, [A, DNA, A_DNA, DNA_T, A_DNA_T, RNA, GFP], [kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G]);
 
@@ -93,19 +93,19 @@ end;
 # Define the bin centers for plotting
 bin_centers = collect(min_value : bin_width : max_value);
 # Plot the histogram
-bar(bin_centers, bin_counts, xlabel="Time [hrs]", ylabel="frequencey", title="number of points per 20 min of 72 hour sim",
+bar(bin_centers, bin_counts, xlabel="Time [hrs]", ylabel="Counts", title="number of points per 20 min of 72 hour sim",
  legend=false,)
 # Compute the average number of reactions per interval
 average_reactions_per_interval = mean(bin_counts);
 
-plot(sol.t[1:50], title = "time of simulation", xlabel="# of reaction", ylabel="Time [Hrs]")
+plot(sol.t[1:50], title = "time of simulation", xlabel="# of Events", ylabel="Time [Hrs]")
 # Compute the standard deviation of the number of reactions per interval
 stddev_reactions_per_interval = std(bin_counts);
 # Display the result as the average plus or minus the standard deviation
 println("Average ± Standard deviation: ", average_reactions_per_interval, " ± ", stddev_reactions_per_interval)
 
 T_A_DNA = (sol.t,A_DNA);
-
+plot(sol)
 plot(sol.t,A_DNA, title="Promoter State for Entire 72hr simulation",
  xlabel = "time [hrs]", legend=false, ylabel="Promoter State (1 = active)")
 # Initialize an empty array to store the individual matrices
