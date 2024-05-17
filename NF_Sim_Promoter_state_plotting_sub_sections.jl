@@ -20,8 +20,8 @@ rxs = [
 ];
 
 tspan = (0.0, 72); # reaction time span
-u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 100000, GFP => 1000000];  # starting conditions
-p = [kOn => 10, kOff => 10, kOnt=> 10, kOfft=> 10, k => 3, kT => 1.5, deg_R => 0.03, deg_G => 0.008]
+u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 1000, GFP => 1000000];  # starting conditions
+p = [kOn => 100000, kOff => 100000, kOnt=> 0.000001, kOfft=> 1000000, k => 3, kT => 1.5, deg_R => 0.03, deg_G => 0.008]
 
 @named rn = ReactionSystem(rxs, t, [A, DNA, A_DNA, DNA_T, A_DNA_T, RNA, GFP], [kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G]);
 
@@ -31,6 +31,8 @@ jprob = JumpProblem(rn, dprob, Direct())
 sol = solve(jprob, SSAStepper())
 
 A_DNA = sol[3,:];
+ps = plot(experimental_data[:, 1], observed_data, seriestype=:scatter, label="Dox Induced Experimental Time Trace", xlabel="Time (Hrs)", ylabel="# of GFP Molecules (Converted from A.u.)", color =:red, legend=:bottomright);
+plot!(ps, collect(tspan[1]:0.333:tspan[2]-0.333), sol[7, :], label="Simulation", linewidth=3)
 
 # Initialize an empty array to store durations in 1 state in minutes
 on_durations_minutes = Float64[];
@@ -112,7 +114,7 @@ plot(sol.t,A_DNA, title="Promoter State for Entire 72hr simulation",
 sub_matrices = [];
 
 # Define the bin width
-bin_width = 0.33333;
+bin_width = 0.08333;
 # Iterate over each bin
 for bin_start in 0:bin_width:(72)
     # Define the end of the current bin
@@ -294,4 +296,3 @@ print(df_sums)
 plot(total_on_state_durations, legend=false)
 print(minimum(total_on_state_durations))
 print(maximum(total_on_state_durations))
-
