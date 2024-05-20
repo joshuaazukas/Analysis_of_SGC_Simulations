@@ -1,5 +1,5 @@
 using Catalyst, DifferentialEquations, Plots, Random, Distributions, DataFrames, CSV, Printf, LsqFit, Interpolations
-experimental_data = CSV.read("Z://Gene regulatory network Simulations//SS Low Box Avg conv.csv", DataFrame);
+experimental_data  = CSV.read("Z://Gene regulatory network Simulations//SS Low Box Avg conv.csv", DataFrame);
 
 observed_data = experimental_data[!,4];
 observed_dataSD = experimental_data[!,5];
