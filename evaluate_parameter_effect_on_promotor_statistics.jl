@@ -26,9 +26,9 @@ p_base = [1.0, 1.0, 0.0, 0.0, 3.0, 1.5, 0.03, 0.008]
 @named rn = ReactionSystem(rxs, t, [A, DNA, A_DNA, DNA_T, A_DNA_T, RNA, GFP], [kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G])
 
 function run_simulation(rn, u0, tspan, p, num_runs)
-    fractions_on_state = Float32[]
-    total_changes_all = Float32[]
-    frequency_changes_all = Float32[]
+    fractions_on_state = Float64[]
+    total_changes_all = Float64[]
+    frequency_changes_all = Float64[]
 
     for _ in 1:num_runs
         dprob = DiscreteProblem(rn, u0, tspan, p)
@@ -38,7 +38,7 @@ function run_simulation(rn, u0, tspan, p, num_runs)
         A_DNA = sol[3,:]
 
         # Analyze state duration
-        on_durations_minutes = Float32[]
+        on_durations_minutes = Float64[]
         in_1_state = false
         start_time = NaN
 
@@ -93,8 +93,8 @@ function run_simulation(rn, u0, tspan, p, num_runs)
     return (avg_fraction_on_state, std_fraction_on_state, avg_total_changes, std_total_changes, avg_frequency_changes_per_hour, std_frequency_changes_per_hour)
 end
 
-num_runs = 2
-multipliers = [10, 100, 1000, 10000, 10e5,10e6]
+num_runs = 3
+multipliers = [10, 100, 1000, 10000, 10e5]
 
 # Mapping parameter names to their indices
 param_indices = Dict(:kOn => 1, :kOff => 2, :kOnt => 3, :kOfft => 4, :k => 5, :kT => 6, :deg_R => 7, :deg_G => 8)
@@ -116,14 +116,29 @@ for multiplier in multipliers
     push!(results, (multiplier, avg_fraction_on_state, std_fraction_on_state, avg_total_changes, std_total_changes, avg_frequency_changes_per_hour, std_frequency_changes_per_hour))
 end
 
+# Define the filename
+filename = "Outputs/evaluate_parameter_effect_on_promotor_statistics//simulation_results(kon=koff10_5).csv"
+
+# Convert the results matrix to a DataFrame
+results_df = DataFrame(multiplier=map(x -> x[1], results),
+                       avg_fraction_on_state=map(x -> x[2], results),
+                       std_fraction_on_state=map(x -> x[3], results),
+                       avg_total_changes=map(x -> x[4], results),
+                       std_total_changes=map(x -> x[5], results),
+                       avg_frequency_changes_per_hour=map(x -> x[6], results),
+                       std_frequency_changes_per_hour=map(x -> x[7], results))
+
+# Write the DataFrame to a CSV file
+CSV.write(filename, results_df);
+
 using Printf
 
 # Plotting
-multiplier_values = [result[1] for result in results]
-avg_fractions = [result[2] for result in results]
-std_fractions = [result[3] for result in results]
-avg_frequencies = [result[6] for result in results]
-std_frequencies = [result[7] for result in results]
+multiplier_values = [result[1] for result in results];
+avg_fractions = [result[2] for result in results];
+std_fractions = [result[3] for result in results];
+avg_frequencies = [result[6] for result in results];
+std_frequencies = [result[7] for result in results];
 
 # Custom tick labels for x-axis
 x_tick_labels = [Printf.@sprintf("%.1f", log10(multiplier)) for multiplier in multiplier_values]
@@ -131,5 +146,5 @@ x_tick_labels = [Printf.@sprintf("%.1f", log10(multiplier)) for multiplier in mu
 bar1 = bar(log.(multiplier_values), (avg_fractions), yerr=std_fractions, xlabel="kOn = kOff (log10)", ylabel="Average Fraction On State", title="Average Fraction On State vs kOn = kOff", legend=false, xticks=(log.(multiplier_values), x_tick_labels))
 display(bar1)
 
-bar2 = bar(log.(multiplier_values), log.(avg_frequencies), yerr=std_frequencies, xlabel="kOn = kOff (log10)", ylabel="Average Frequency of Changes per Hour (log10)", title="Average Frequency of Changes\nper Hour vs kOn = kOff", legend=false, xticks=(log.(multiplier_values), x_tick_labels))
+bar2 = bar(log.(multiplier_values), log.(avg_frequencies), yerr=log.(std_frequencies), xlabel="kOn = kOff (log10)", ylabel="Average Frequency of Changes per Hour (log10)", title="Average Frequency of Changes\nper Hour vs kOn = kOff", legend=false, xticks=(log.(multiplier_values), x_tick_labels))
 display(bar2)
