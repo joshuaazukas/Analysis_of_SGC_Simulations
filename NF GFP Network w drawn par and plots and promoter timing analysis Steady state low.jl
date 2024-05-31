@@ -1,6 +1,5 @@
 using Catalyst, DifferentialEquations, Plots, Random, Distributions, DataFrames, CSV, Printf, LsqFit, Interpolations
-experimental_data  = CSV.read("Z://Gene regulatory network Simulations//SS Low Box Avg conv.csv", DataFrame);
-
+experimental_data  = CSV.read("F://Gene regulatory network Simulations//SS Low Box Avg conv.csv", DataFrame);
 observed_data = experimental_data[!,4];
 observed_dataSD = experimental_data[!,5];
 @parameters kOn kOff kOnt kOfft k kT deg_R deg_G;
@@ -12,7 +11,7 @@ rxs = [
     (@reaction kOff, A_DNA --> A + DNA), # unbinding of Transcription factor complex to DNA
     (@reaction kOnt, DNA + GFP --> DNA_T), #GFP (acting as TetR) binds to DNA, Prevents Transcription
     (@reaction kOfft, DNA_T --> DNA + GFP), # GFP unbinding DNA 
-    (@reaction kOnt, A_DNA + GFP --> A_DNA_T), # GFP binding active DNA, preventing transcription
+    #(@reaction kOnt, A_DNA + GFP --> A_DNA_T), # GFP binding active DNA, preventing transcription
     (@reaction kOfft, A_DNA_T --> A_DNA), # GFP unbinding active DNA, allows transcription
     (@reaction k, A_DNA --> A_DNA + RNA), # Transcription of DNA to mRNA
     (@reaction kT, RNA --> RNA + GFP), # Translation of RNA to reporter protein (GFP)
@@ -28,8 +27,8 @@ u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 1000, GFP =
 # Generate arrays of ~1000 values for each parameter using normal distribution
 num_samples = 5000;
 
-means = (100000, 100000, 0.000001, 1000000, 25, 12, 0.012, 0.01); # mean value of parameter distribution (kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G)
-std_devs = (0.1, 0.1, 0.0000001, 1000, 2.5, 1, 0.0001, 0.001); # Standard deviation of parameter distribution
+means = (1, 1, 1e-15, 1e12, 60, 10, 0.099, 0.03); # mean value of parameter distribution (kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G)
+std_devs = (0.1, 0.1, 1e-14, 1e11, 0.6, 0.1, 0.001, 0.001); # Standard deviation of parameter distribution
 #std_devs = (0.0001, 0.0001, 0.00001, 0.0001, 0.0005, 0.00035, 0.000001, 0.000001);
 # Create arrays of ~1000 values for each parameter
 param_values = [rand(Normal(mean, std), num_samples) for (mean, std) in zip(means, std_devs)];
@@ -54,10 +53,12 @@ num_simulations = 5;
 threshfit = 100
 saveat = 0:0.333:72;
 solutions = [];
-solutions_rna = []
+solutions_rna = [];
+random_params =[];
 param_sets = [];
 A_DNA_sims = [];
 A_DNA = [];
+
 Random.seed!(123); # Set a seed for reproducibility
 for i in 1:num_simulations;
     # Randomly choose values from the pre-generated arrays for each parameter
@@ -104,7 +105,8 @@ end
 # Reshape all GFP vectors into a single matrix with 5 columns
 max_length = maximum(length, solutions)
 gfp_values = hcat([vcat(vec, fill(NaN, max_length - length(vec))) for vec in solutions]...)
-
+rna_values = hcat([vcat(vec, fill(NaN, max_length - length(vec))) for vec in solutions_rna]...)
+plot(A_DNA_sims[1])
 gfp_values = gfp_values[1:end-1, :]
 plot(collect(tspan[1]:0.333:tspan[2] - 0.333), gfp_values, xlabel="Time", ylabel="GFP", label="", legend=:topright);
 #CSV.write("C://Users//jrazu//Desktop//Gene regulatory network Simulations//gfp_values1k.csv", DataFrame(solutions, :auto))
@@ -117,7 +119,6 @@ for i in 1:5
 end
 
 display(ps)
-plot(A_DNA_sims[1])
 #savefig(ps, "C://Users//jrazu//Desktop//Gene regulatory network Simulations//example sim.png")
 for i in 1:length(param_sets)
     println(param_sets[i])
