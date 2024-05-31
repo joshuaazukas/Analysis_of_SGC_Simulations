@@ -106,10 +106,10 @@ end
 max_length = maximum(length, solutions)
 gfp_values = hcat([vcat(vec, fill(NaN, max_length - length(vec))) for vec in solutions]...)
 rna_values = hcat([vcat(vec, fill(NaN, max_length - length(vec))) for vec in solutions_rna]...)
-plot(A_DNA_sims[1])
+
 gfp_values = gfp_values[1:end-1, :]
 plot(collect(tspan[1]:0.333:tspan[2] - 0.333), gfp_values, xlabel="Time", ylabel="GFP", label="", legend=:topright);
-#CSV.write("C://Users//jrazu//Desktop//Gene regulatory network Simulations//gfp_values1k.csv", DataFrame(solutions, :auto))
+
 # Plot experimental data
 ps = plot(experimental_data[:, 1], observed_data, seriestype=:scatter, label="Dox Induced Experimental Time Trace", xlabel="Time (Hrs)", ylabel="# of GFP Molecules (Converted from A.u.)", color =:red, legend=:bottomright);
 rna = [];
@@ -117,12 +117,14 @@ rna = [];
 for i in 1:5
     plot!(ps, collect(tspan[1]:0.333:tspan[2]-0.333), gfp_values[:, i], label="Example Simulation $i", linewidth=3);
 end
-
 display(ps)
-#savefig(ps, "C://Users//jrazu//Desktop//Gene regulatory network Simulations//example sim.png")
+plot(A_DNA_sims[1])
 for i in 1:length(param_sets)
     println(param_sets[i])
 end
+
+
+
 # Calculate SSD for each simulation
 ssd_values = [sum((gfp_values[:, i] .- observed_data).^2) for i in 1:num_simulations]
 
