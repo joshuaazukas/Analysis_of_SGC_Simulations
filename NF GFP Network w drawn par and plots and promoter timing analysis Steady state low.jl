@@ -1,7 +1,7 @@
 using Catalyst, DifferentialEquations, Plots, Random, Distributions, DataFrames, CSV, Printf, LsqFit, Interpolations
-experimental_data  = CSV.read("F://Gene regulatory network Simulations//SS Low Box Avg conv.csv", DataFrame);
-observed_data = experimental_data[!,4];
-observed_dataSD = experimental_data[!,5];
+experimental_data  = CSV.read("SS Low Box Avg converted.csv", DataFrame);
+observed_data = experimental_data[!,4]; #averaged GFP traces from Stead State non-induced cells, converted to approximate # of GFP molecules
+observed_dataSD = experimental_data[!,5]; #SD of GFP traces, Converted by same ratio as GFP average
 @parameters kOn kOff kOnt kOfft k kT deg_R deg_G;
 @variables t;
 @species A(t) DNA(t) A_DNA(t) DNA_T(t) A_DNA_T(t) RNA(t) GFP(t);
@@ -11,7 +11,7 @@ rxs = [
     (@reaction kOff, A_DNA --> A + DNA), # unbinding of Transcription factor complex to DNA
     (@reaction kOnt, DNA + GFP --> DNA_T), #GFP (acting as TetR) binds to DNA, Prevents Transcription
     (@reaction kOfft, DNA_T --> DNA + GFP), # GFP unbinding DNA 
-    #(@reaction kOnt, A_DNA + GFP --> A_DNA_T), # GFP binding active DNA, preventing transcription
+    (@reaction kOnt, A_DNA + GFP --> A_DNA_T), # GFP binding active DNA, preventing transcription
     (@reaction kOfft, A_DNA_T --> A_DNA), # GFP unbinding active DNA, allows transcription
     (@reaction k, A_DNA --> A_DNA + RNA), # Transcription of DNA to mRNA
     (@reaction kT, RNA --> RNA + GFP), # Translation of RNA to reporter protein (GFP)
@@ -28,7 +28,7 @@ u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 1000, GFP =
 num_samples = 5000;
 
 means = (1, 1, 1e-15, 1e12, 60, 10, 0.099, 0.03); # mean value of parameter distribution (kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G)
-std_devs = (0.1, 0.1, 1e-14, 1e11, 0.6, 0.1, 0.001, 0.001); # Standard deviation of parameter distribution
+std_devs = (0.1, 0.1, 1e-16, 1e11, 0.6, 0.1, 0.001, 0.001); # Standard deviation of parameter distribution
 #std_devs = (0.0001, 0.0001, 0.00001, 0.0001, 0.0005, 0.00035, 0.000001, 0.000001);
 # Create arrays of ~1000 values for each parameter
 param_values = [rand(Normal(mean, std), num_samples) for (mean, std) in zip(means, std_devs)];
@@ -106,10 +106,10 @@ end
 max_length = maximum(length, solutions)
 gfp_values = hcat([vcat(vec, fill(NaN, max_length - length(vec))) for vec in solutions]...)
 rna_values = hcat([vcat(vec, fill(NaN, max_length - length(vec))) for vec in solutions_rna]...)
-plot(A_DNA_sims[1])
+
 gfp_values = gfp_values[1:end-1, :]
 plot(collect(tspan[1]:0.333:tspan[2] - 0.333), gfp_values, xlabel="Time", ylabel="GFP", label="", legend=:topright);
-#CSV.write("C://Users//jrazu//Desktop//Gene regulatory network Simulations//gfp_values1k.csv", DataFrame(solutions, :auto))
+
 # Plot experimental data
 ps = plot(experimental_data[:, 1], observed_data, seriestype=:scatter, label="Dox Induced Experimental Time Trace", xlabel="Time (Hrs)", ylabel="# of GFP Molecules (Converted from A.u.)", color =:red, legend=:bottomright);
 rna = [];
@@ -117,12 +117,14 @@ rna = [];
 for i in 1:5
     plot!(ps, collect(tspan[1]:0.333:tspan[2]-0.333), gfp_values[:, i], label="Example Simulation $i", linewidth=3);
 end
-
 display(ps)
-#savefig(ps, "C://Users//jrazu//Desktop//Gene regulatory network Simulations//example sim.png")
+plot(A_DNA_sims[1])
 for i in 1:length(param_sets)
     println(param_sets[i])
 end
+
+
+
 # Calculate SSD for each simulation
 ssd_values = [sum((gfp_values[:, i] .- observed_data).^2) for i in 1:num_simulations]
 
