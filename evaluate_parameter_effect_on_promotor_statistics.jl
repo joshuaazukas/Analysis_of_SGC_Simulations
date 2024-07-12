@@ -21,7 +21,7 @@ rxs = [
 
 tspan = (0.0, 72)  # reaction time span
 u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 1000, GFP => 950000]  # starting conditions
-p_base = [1.0, 1.0, 0.0, 0.0, 3.0, 1.5, 0.03, 0.008]
+p_base = [5.0, 1.0, 0, 0, 3.0, 1.5, 0.03, 0.008]
 
 @named rn = ReactionSystem(rxs, t, [A, DNA, A_DNA, DNA_T, A_DNA_T, RNA, GFP], [kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G])
 
@@ -93,9 +93,9 @@ function run_simulation(rn, u0, tspan, p, num_runs)
     return (avg_fraction_on_state, std_fraction_on_state, avg_total_changes, std_total_changes, avg_frequency_changes_per_hour, std_frequency_changes_per_hour)
 end
 
-num_runs = 3
-multipliers = [10, 100, 1000, 10000, 10e5]
-
+num_runs = 5
+multipliers = [10, 100, 1000, 10000, 10e4, 10e5,]
+10e6,10e7,10e8
 # Mapping parameter names to their indices
 param_indices = Dict(:kOn => 1, :kOff => 2, :kOnt => 3, :kOfft => 4, :k => 5, :kT => 6, :deg_R => 7, :deg_G => 8)
 
@@ -117,7 +117,7 @@ for multiplier in multipliers
 end
 
 # Define the filename
-filename = "Outputs/evaluate_parameter_effect_on_promotor_statistics//simulation_results(kon=koff10_5).csv"
+filename = "Outputs/evaluate_parameter_effect_on_promotor_statistics//simulation_results(kon=koffx510_5_kont=kofft=0).csv"
 
 # Convert the results matrix to a DataFrame
 results_df = DataFrame(multiplier=map(x -> x[1], results),
@@ -143,8 +143,7 @@ std_frequencies = [result[7] for result in results];
 # Custom tick labels for x-axis
 x_tick_labels = [Printf.@sprintf("%.1f", log10(multiplier)) for multiplier in multiplier_values]
 
-bar1 = bar(log.(multiplier_values), (avg_fractions), yerr=std_fractions, xlabel="kOn = kOff (log10)", ylabel="Average Fraction On State", title="Average Fraction On State vs kOn = kOff", legend=false, xticks=(log.(multiplier_values), x_tick_labels))
-display(bar1)
+bar1 = bar(log10.(multiplier_values), (avg_fractions), yerr=std_fractions, xlabel="kOn = kOff x5 (log10)", ylabel="Average Fraction On State", title="Average Fraction On State vs kOn = kOff x5\nkOnt=kOfft=0", legend=false, xticks=(log10.(multiplier_values), x_tick_labels))
 
-bar2 = bar(log.(multiplier_values), log.(avg_frequencies), yerr=log.(std_frequencies), xlabel="kOn = kOff (log10)", ylabel="Average Frequency of Changes per Hour (log10)", title="Average Frequency of Changes\nper Hour vs kOn = kOff", legend=false, xticks=(log.(multiplier_values), x_tick_labels))
-display(bar2)
+
+bar2 = bar(log10.(multiplier_values), log10.(avg_frequencies), yerr=log10.(std_frequencies), xlabel="kOn =  kOff x5 (log10)", ylabel="Average Frequency of Changes\n per Hour (log10)", title="Average Frequency of Changes\nper Hour vs kOn = kOff x5\nkOnt=kOfft=0", legend=false, xticks=(log10.(multiplier_values), x_tick_labels))

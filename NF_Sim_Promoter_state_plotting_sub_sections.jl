@@ -20,8 +20,8 @@ rxs = [
 ];
 
 tspan = (0.0, 72); # reaction time span
-u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 1000, GFP => 1000000];  # starting conditions
-p = [kOn => 100000, kOff => 100000, kOnt=> 0.000001, kOfft=> 1000000, k => 3, kT => 1.5, deg_R => 0.03, deg_G => 0.008]
+u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 1000, GFP => 950000];  # starting conditions
+p = [kOn => 100000000, kOff => 100000000, kOnt=> 10, kOfft=> 10, k => 25, kT => 12, deg_R => 0.012, deg_G => 0.01]
 
 @named rn = ReactionSystem(rxs, t, [A, DNA, A_DNA, DNA_T, A_DNA_T, RNA, GFP], [kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G]);
 
@@ -29,10 +29,8 @@ dprob = DiscreteProblem(rn, u0, tspan, p)
 jprob = JumpProblem(rn, dprob, Direct())
 
 sol = solve(jprob, SSAStepper())
-
+plot(sol)
 A_DNA = sol[3,:];
-ps = plot(experimental_data[:, 1], observed_data, seriestype=:scatter, label="Dox Induced Experimental Time Trace", xlabel="Time (Hrs)", ylabel="# of GFP Molecules (Converted from A.u.)", color =:red, legend=:bottomright);
-plot!(ps, collect(tspan[1]:0.333:tspan[2]-0.333), sol[7, :], label="Simulation", linewidth=3)
 
 # Initialize an empty array to store durations in 1 state in minutes
 on_durations_minutes = Float64[];
@@ -64,16 +62,42 @@ end
 
 # Plot a histogram of on durations in minutes
 histogram(on_durations_minutes, xlabel="Duration Promoter is On (minutes)", ylabel="Frequency", bins=20,
- legend=false, title = "Pormoter On State Durations for entire 72 hours", xticks = 12, xlim = (0,60), ylim = (0,240))
+ legend=false, title = "Pormoter On State Durations for entire 72 hours", xticks = 12, xlim = (0,60))
 
 # Calculate total time the promoter is in the "On" state in minutes
 total_on_time_minutes = sum(on_durations_minutes)
 # Calculate total simulation time in minutes
-total_simulation_time_minutes = (tspan[2] - tspan[1]) * 60  # Convert hours to minutes
+total_simulation_time_minutes = (tspan[2] - tspan[1]) * 60;  # Convert hours to minutes
 # Calculate the fraction of time the promoter is in the "On" state compared to the total simulation time
-fraction_on_time = total_on_time_minutes / total_simulation_time_minutes
+fraction_on_time = total_on_time_minutes / total_simulation_time_minutes;
 # Print the fraction
-println("Fraction of time promoter is in On state: ", fraction_on_time)
+println("Fraction of time promoter is in On state: ", fraction_on_time);
+#Frequency
+# Initialize counters for state changes
+transition_0_to_1 = 0;
+transition_1_to_0 = 0;
+
+# Iterate over each time point and value in the A_DNA array
+for i in 2:length(A_DNA)
+    # Check for transitions from 0 to 1
+    if A_DNA[i-1] == 0 && A_DNA[i] == 1
+        transition_0_to_1 += 1
+    # Check for transitions from 1 to 0
+    elseif A_DNA[i-1] == 1 && A_DNA[i] == 0
+        transition_1_to_0 += 1
+    end
+end;
+
+# Total number of state changes
+total_changes = transition_0_to_1 + transition_1_to_0;
+
+# Average frequency of changes per hour
+total_time_hours = tspan[2] - tspan[1];
+average_frequency_per_hour = total_changes / total_time_hours;
+
+println("Total number of state changes: ", total_changes)
+println("Average frequency of changes per hour: ", average_frequency_per_hour)
+
 # Define the bin width
 bin_width = 0.333;
 # Initialize an array to store the counts for each bin
