@@ -27,7 +27,7 @@ u0 = (DNAoff => 1, DNAon =>0, A=>1, RNA=>0, TetrOn=>0,TetrOff=>0);
 p = (kOn =>0.0042*60*60, kOff => 0.00038*60*60, kTr => 25, kTl => 12, tOn => 100, tOff => 0.01*(dox), dM => 0.12, dG => 0.01);
 
 @named rn = ReactionSystem(rxs, t, [A, DNAoff, DNAon, RNA, TetrOff, TetrOn], [kOn, kOff, kTr, kTl, tOn, tOff, dM, dG]);
-
+rn = complete(rn)
 
 function update_parameters!(integrator)
     TetrOn_value = integrator.u[6]  
@@ -56,7 +56,7 @@ TetrOffi = TetrOff_int.(t_inter);
 TetrOn_int = linear_interpolation(sol.t, sol[6,:]);
 TetrOni = TetrOn_int.(t_inter)
 #, xlimit=(0.0,1.0)
-Tetr_sum = TetrOffi .+ TetrOni;
+Tetr_sum = TetrOffi .+ TetrOni; # Doesn't work as expected
 plot(sol,idxs=1)
 plot(sol,idxs=2)
 plot(sol,idxs=3)
