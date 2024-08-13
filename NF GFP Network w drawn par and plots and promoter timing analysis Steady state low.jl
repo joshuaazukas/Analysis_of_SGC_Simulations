@@ -23,7 +23,7 @@ tspan = (0.0, 72); # reaction time span
 u0 = [A => 1, DNA => 1, A_DNA => 0, DNA_T => 0, A_DNA_T => 0, RNA => 1000, GFP => 950000];  # starting conditions
 
 @named rn = ReactionSystem(rxs, t, [A, DNA, A_DNA, DNA_T, A_DNA_T, RNA, GFP], [kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G]);
-
+rn = complete(rn)
 # Generate arrays of ~1000 values for each parameter using normal distribution
 num_samples = 5000;
 
