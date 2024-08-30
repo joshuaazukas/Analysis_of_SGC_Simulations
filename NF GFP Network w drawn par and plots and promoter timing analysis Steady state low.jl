@@ -27,8 +27,8 @@ rn = complete(rn)
 # Generate arrays of ~1000 values for each parameter using normal distribution
 num_samples = 5000;
 
-means = (1, 1, 1e-15, 1e12, 60, 10, 0.099, 0.03); # mean value of parameter distribution (kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G)
-std_devs = (0.1, 0.1, 1e-16, 1e11, 0.6, 0.1, 0.001, 0.001); # Standard deviation of parameter distribution
+means = (10, 1, 1e-15, 1e12, 130, 25, 0.099, 0.0266); # mean value of parameter distribution (kOn, kOff, kOnt, kOfft, k, kT, deg_R, deg_G)
+std_devs = (1, 0.1, 1e-16, 1e11, 0.6, 0.1, 0.001, 0.001); # Standard deviation of parameter distribution
 #std_devs = (0.0001, 0.0001, 0.00001, 0.0001, 0.0005, 0.00035, 0.000001, 0.000001);
 # Create arrays of ~1000 values for each parameter
 param_values = [rand(Normal(mean, std), num_samples) for (mean, std) in zip(means, std_devs)];
@@ -49,7 +49,7 @@ plot(histograms..., layout=(2, 4), legend=:topright)
 #savefig(degGhist, "C://Users//jrazu//Desktop//Gene regulatory network Simulations//degGhist.png")
 
 # Arrays to store simulated GFP values and parameters for each simulation
-num_simulations = 5;
+num_simulations = 100;
 threshfit = 100
 saveat = 0:0.333:72;
 solutions = [];
@@ -123,13 +123,13 @@ for i in 1:length(param_sets)
     println(param_sets[i])
 end
 
-
+# Stop here to just see comparison of averaged basal expression steady state experimental time-trace to simulated time-traces
 
 # Calculate SSD for each simulation
 ssd_values = [sum((gfp_values[:, i] .- observed_data).^2) for i in 1:num_simulations]
 
 # Find the indices of the top 5 simulations with the minimum SSD
-best_sim_indices = sortperm(ssd_values)[1:200]
+best_sim_indices = sortperm(ssd_values)[1:10]
 
 # Initialize arrays to store the parameters and simulated GFP values for the top 5 simulations
 top_param_sets = []
@@ -145,11 +145,11 @@ for index in best_sim_indices
 end
 
 # Plot experimental data
-p = scatter(experimental_data[:, 1], observed_data, label="Dox Induced Experimental Time Trace", xlabel="Time (Hrs)", ylabel="# of GFP Molecules (Converted from A.u.)", legend=:bottomright, color = :red);
+p = plot(experimental_data[:, 1], observed_data, label="Dox Induced Experimental Time Trace", xlabel="Time (Hrs)", ylabel="# of GFP Molecules (Converted from A.u.)", legend=:bottomright, color = :red);
 
 # Plot simulated data for the top 5 simulations
 for (i, gfp_values) in enumerate(top_gfp_values)
-    plot!(p, collect(tspan[1]:0.333:tspan[2]-0.333), gfp_values, label="Best Fit Simulation $i", linewidth=3, alpha=0.1, legend=false);
+    plot!(p, collect(tspan[1]:0.333:tspan[2]-0.333), gfp_values, label="Best Fit Simulation $i", linewidth=3, alpha=0.8, legend=false);
 end
 # Show the plot
 display(p)

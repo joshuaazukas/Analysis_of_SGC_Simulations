@@ -39,24 +39,14 @@ for (i, factor) in enumerate(kteton_factors)
     dprob = DiscreteProblem(rn, u0, tspan, p);
     jprob = JumpProblem(rn, dprob, Direct());
     sol = solve(jprob, SSAStepper());
-    # Calculate the total time DNAon is 1
-    time = 0.0
-    for j in 2:length(sol.t)
-        if sol[DNAon][j-1] == 1
-            time += sol.t[j] - sol.t[j-1]
-        end
-    end
-    push!(time_in_DNAon, time)
     
     # Plot the result
     plot!(sol, idxs=6, label="kteton * $factor")
 end
 
-# Display total time in DNAon == 1 for each factor
-time_in_DNAon
 plot!()
 
-t_inter = 0:0.001:1000;
+  t_inter = 0:0.001:1000;
 
 plot(sol,idxs=1)
 plot(sol,idxs=2)
