@@ -118,12 +118,13 @@ for i in 1:5
     plot!(ps, collect(tspan[1]:0.333:tspan[2]-0.333), gfp_values[:, i], label="Example Simulation $i", linewidth=3);
 end
 display(ps)
+
+# Stop here to just see comparison of averaged basal expression steady state experimental time-trace to simulated time-traces
+
 plot(A_DNA_sims[1])
 for i in 1:length(param_sets)
     println(param_sets[i])
 end
-
-# Stop here to just see comparison of averaged basal expression steady state experimental time-trace to simulated time-traces
 
 # Calculate SSD for each simulation
 ssd_values = [sum((gfp_values[:, i] .- observed_data).^2) for i in 1:num_simulations]
