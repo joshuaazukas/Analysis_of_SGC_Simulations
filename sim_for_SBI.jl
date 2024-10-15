@@ -3,6 +3,8 @@ using Statistics, Distributions, StatsBase
 using CSV, DataFrames, FFTW, DSP
 using SymbolicIndexingInterface: parameter_values, state_values
 using SciMLStructures: Tunable, replace, replace!
+using JLD2, UnPack
+
 @parameters kOn, kOff, kteton, ktetoff, kTr, kTl, dM, dG;
 @variables t;
 @species A(t), DNAoff(t), DNAon(t), DNAtetr(t), RNA(t), TetrOn(t);
@@ -23,7 +25,6 @@ ukteton = Normal(0.0001016273663,0.1*0.0001016273663)
 uktetoff = Normal(54,0.1*54)
 ukTr = Normal(375,0.1*375)
 ukTl = Normal(67.5,0.1*67.5)
-
 
 # Define the reaction network
 rxs = [
@@ -70,7 +71,10 @@ plot(pw.power[2:end])
 
 sumstats_list = Vector{Float64}[]
 params_list = Vector{Float64}[]
-@time for i in 1:10
+@time for i in 1:50000
+    if (i % 100)==0
+        println(i)
+    end 
     kOn_new = rand(ukOn)
     kOff_new = rand(ukOff)
     kteton_new = rand(ukteton)
@@ -104,3 +108,4 @@ end
 sumstats = reduce(vcat,transpose.(sumstats_list))
 params = reduce(vcat,transpose.(params_list))
 
+jldsave("4th.jld2"; sumstats,params)
