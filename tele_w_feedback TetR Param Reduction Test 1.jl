@@ -2,7 +2,7 @@ using Catalyst, DifferentialEquations, Plots, Interpolations
 using Statistics, Distributions, StatsBase
 using CSV, DataFrames
 
-@parameters kOn, kOff, DNAon, DNAoff, kteton, ktetoff, kTr, kTl, tOn, tOff, dM, dG;
+@parameters kOn, kOff, kteton, ktetoff, kTr, kTl, tOn, tOff, dM, dG;
 @variables t;
 @species A(t), DNAoff(t), DNAon(t), DNAtetr(t), RNA(t), TetrOn(t), TetrOff(t);
 
@@ -13,18 +13,15 @@ rxs = [
     (@reaction kOff, DNAon --> DNAoff + A),
     (@reaction kTr, DNAon --> DNAon + RNA),
     (@reaction kTl, RNA --> RNA + TetrOn),
-    (@reaction tOn, TetrOff --> TetrOn),
-    (@reaction tOff, TetrOn --> TetrOff),
     (@reaction dM, RNA --> 0),
     (@reaction dG, TetrOn --> 0),
-    (@reaction dG, TetrOff --> 0)
 ];
 
 tspan = (0.0, 600);
 u0 =();
 p=();
 u0 = (DNAoff => 1, DNAon =>0, DNAtetr=>0, A=>1, RNA=>0, TetrOn=>0,TetrOff=>0);
-p = (kOn =>0.0042*60*60, kOff => 0.00038*60*60, kteton => 0.00015,ktetoff => 0.015, kTr => 25, kTl => 12, tOn => 10, tOff => 10, dM => 0.08, dG => 0.01);
+p = (kOn => 0.0038*60*60, kOff => 0.0042*60*60, kteton => base_kteton*factor, ktetoff => 0.015, kTr => 375, kTl => 67.5, dM => 0.345, dG => 0.00522);
 
 @named rn = ReactionSystem(rxs, t, [A, DNAoff, DNAon, DNAtetr, RNA, TetrOff, TetrOn], [kOn, kOff, kteton, ktetoff, kTr, kTl, tOn, tOff, dM, dG]);
 rn = complete(rn)
