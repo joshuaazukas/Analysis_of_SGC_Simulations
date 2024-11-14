@@ -109,4 +109,26 @@ end
 sumstats = reduce(vcat,transpose.(sumstats_list))
 params = reduce(vcat,transpose.(params_list))
 
-jldsave("4th.jld2"; sumstats,params)
+jldsave("4thbroken.jld2"; sumstats,params)
+
+@unpack sumstats,params = jldopen("4thbroken.jld2")
+sumstatst = sumstats
+paramst = params
+
+@unpack sumstats,params = jldopen("1stbroken.jld2")
+sumstatst = vcat(sumstatst, sumstats)
+paramst = vcat(paramst,params)
+
+@unpack sumstats,params = jldopen("2ndbroken.jld2")
+sumstatst = vcat(sumstatst, sumstats)
+paramst = vcat(paramst,params)
+
+@unpack sumstats,params = jldopen("3rdbroken.jld2")
+sumstatst = vcat(sumstatst, sumstats)
+paramst = vcat(paramst,params)
+
+file = jldopen("sumstats_broken.jld2","w")
+@pack! file = sumstatst,paramst
+close(file)
+f = load("sumstats_broken.jld2")
+keys(f)
