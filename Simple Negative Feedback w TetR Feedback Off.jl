@@ -17,8 +17,8 @@ p=[]
 # Loop over each factor, reforming the reaction network each time
 for (i, factor) in enumerate(kteton_factors)
     # Adjust the value of kteton based on the current factor
-    p = (kOn => 0.0038*60*60, kOff => 0.0042*60*60, kteton => base_kteton*factor, ktetoff => 0.015, kTr => 375, kTl => 67.5, dM => 0.345, dG => 0.00522)
-
+    p = (kOn => 0.0042*60*60, kOff => 0.00038*60*60, kteton => 0, ktetoff => 0, kTr => 375, kTl => 67.5, dM => 0.8, dG => 0.3)
+    #p = (kOn => 0.0038*60*60, kOff => 0.0042*60*60, kteton => 0, ktetoff => 0, kTr => 375, kTl => 67.5, dM => 0.345, dG => 0.00522)
     # Define the reaction network
     rxs = [
         (@reaction kOn, DNAoff + A --> DNAon),
@@ -45,7 +45,7 @@ for (i, factor) in enumerate(kteton_factors)
     plot!(sol, idxs=6, label="kteton * $factor")
 end
 plot!()
-plot!(xlim=(750,900))
+plot!(xlim=(600,900))
 
   t_inter = 0:0.001:1000;
 
