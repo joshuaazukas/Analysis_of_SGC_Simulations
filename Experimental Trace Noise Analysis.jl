@@ -18,16 +18,16 @@ lp = Lowpass(0.00006, fs=0.00083333)
 dmeth = Butterworth(2)
 filt_GFP_example = filtfilt(digitalfilter(lp,dmeth), example_GFP)
 plot(time,filt_GFP_example)
-plot!(time,example_GFP)
+plot!(time,example_GFP, label="exp")
 Example_Filt_minus=example_GFP-filt_GFP_example
 plot(Example_Filt_minus)
 std_Exam_Filt_min = std(Example_Filt_minus)
 ndist = std_Exam_Filt_min.*randn(216)
 histogram(ndist, bins=10)
 filt_w_ndist = filt_GFP_example + ndist
-plot(time,filt_w_ndist)
-plot!(time,filt_GFP_example)
-plot!(time,example_GFP)
+plot(time,filt_w_ndist, label="lowpass Filt + Noise")
+plot!(time,filt_GFP_example, label="Lowpass Filt.")
+plot!(time,example_GFP, label="exp")
 
 plot(Example_Filt_minus)
 
@@ -80,8 +80,8 @@ GFP_noise_std = reduce(vcat, transpose.(GFP_STD))
 plot(filt_GFP_noise_traces, legend=:false)
 scatter(GFP_exp_temp_u,GFP_noise_std,xlabel="Temporal Mean Experimental Traces (# GFP x10^6)", ylabel="standard deviation of lowpass filtered\ndata subtracted experimental traces",legend=:false)
 
-scatter(log10.(GFP_exp_temp_u),log10.(GFP_noise_std),xlabel="Temporal Mean Experimental Traces (# GFP x10^6)", ylabel="standard deviation of lowpass filtered\ndata subtracted experimental traces",legend=:false)
+scatter(log10.(GFP_exp_temp_u),(GFP_noise_std),xlabel="Temporal Mean Experimental Traces (# GFP x10^6)", ylabel="standard deviation of lowpass filtered\ndata subtracted experimental traces",legend=:false)
 
-df = DataFrame(u=GFP_exp_temp_u,std=GFP_noise_std)
+#df = DataFrame(u=GFP_exp_temp_u,std=GFP_noise_std)
 
-CSV.write("Temporal_mean_std_filt_data_min_exp.csv", df)
+#CSV.write("Temporal_mean_std_filt_data_min_exp.csv", df)
