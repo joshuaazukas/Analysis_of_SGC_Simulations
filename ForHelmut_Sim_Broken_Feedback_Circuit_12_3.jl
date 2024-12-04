@@ -98,7 +98,7 @@ sim_GFP=Vector{Float64}[]
                             kTr => kTr_new,
                             kTl => kTl_new),
                             u0 = (RNA => Int64(round(u0RNA)), GFP => Int64(round(u0GFP))),
-                            tspan = (0.0,300.0))
+                            tspan = (0.0,150.0))
     jprob = JumpProblem(rn, new_prob, Direct(); save_positions = (false, false));
     sol = solve(jprob, SSAStepper(); saveat=1/3) #changed to 0.333 hrs to match measured data
     GFP = sol[5,:][end-215:end]/1000000 #Changed to get values from indexes corresponding to past 1000hrs (steady state) now that there are 3x as many points saved in simulation output (only storing 216 data points) 
