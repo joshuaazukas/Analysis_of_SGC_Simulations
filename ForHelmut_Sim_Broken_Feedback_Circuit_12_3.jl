@@ -11,7 +11,7 @@ using XLSX
 @species A(t), DNAoff(t), DNAon(t), RNA(t), GFP(t);
 
 # Initial conditions and base parameters
-tspan = (0.0, 500);
+tspan = (0.0, 300);
 u0 = (DNAoff => 1, DNAon => 0, A => 1, RNA => 147, GFP => 1.7098053e7); #Changed to approximately level of GFP and RNA at steady state
 
 
@@ -83,7 +83,7 @@ plot(sol, idxs=4,label="RNA")
 sim_sumstats_list = Vector{Float64}[]
 sim_params_list = Vector{Float64}[]
 sim_GFP=Vector{Float64}[]
-@time for i in 1:1000
+@time for i in 1:50000
     if (i % 100)==0
         println(i)
     end 
@@ -97,7 +97,8 @@ sim_GFP=Vector{Float64}[]
                             kOff => kOff_new,
                             kTr => kTr_new,
                             kTl => kTl_new),
-                            u0 = (RNA => Int64(round(u0RNA)), GFP => Int64(round(u0GFP))))
+                            u0 = (RNA => Int64(round(u0RNA)), GFP => Int64(round(u0GFP))),
+                            tspan = (0.0,300.0))
     jprob = JumpProblem(rn, new_prob, Direct(); save_positions = (false, false));
     sol = solve(jprob, SSAStepper(); saveat=1/3) #changed to 0.333 hrs to match measured data
     GFP = sol[5,:][end-215:end]/1000000 #Changed to get values from indexes corresponding to past 1000hrs (steady state) now that there are 3x as many points saved in simulation output (only storing 216 data points) 
