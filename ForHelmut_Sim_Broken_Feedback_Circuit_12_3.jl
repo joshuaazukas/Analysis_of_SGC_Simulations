@@ -11,8 +11,8 @@ using XLSX
 @species A(t), DNAoff(t), DNAon(t), RNA(t), GFP(t);
 
 # Initial conditions and base parameters
-tspan = (0.0, 2000);
-u0 = (DNAoff => 1, DNAon => 0, A => 1, RNA => 0, GFP => 0); #Changed to approximately level of GFP and RNA at steady state
+tspan = (0.0, 500);
+u0 = (DNAoff => 1, DNAon => 0, A => 1, RNA => 147, GFP => 1.7098053e7); #Changed to approximately level of GFP and RNA at steady state
 
 
 p = (kOn => 0.00009*60*60, kOff => 0.0001*60*60,  kTr => 310, kTl => 425, dM => 1, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
@@ -83,7 +83,7 @@ plot(sol, idxs=4,label="RNA")
 sim_sumstats_list = Vector{Float64}[]
 sim_params_list = Vector{Float64}[]
 sim_GFP=Vector{Float64}[]
-@time for i in 1:3
+@time for i in 1:1000
     if (i % 100)==0
         println(i)
     end 
@@ -91,13 +91,16 @@ sim_GFP=Vector{Float64}[]
     kOff_new = rand(ukOff)
     kTr_new = rand(ukTr)
     kTl_new = bounded_sample(ukTl, max_value)
+    u0RNA = kOn_new/(kOn_new+kOff_new)*kTr_new
+    u0GFP = kTl_new*u0RNA/0.00365
     new_prob = remake(dprob; p = (kOn => kOn_new,
                             kOff => kOff_new,
                             kTr => kTr_new,
-                            kTl => kTl_new))
+                            kTl => kTl_new),
+                            u0 = (RNA => Int64(round(u0RNA)), GFP => Int64(round(u0GFP))))
     jprob = JumpProblem(rn, new_prob, Direct(); save_positions = (false, false));
-    sol = solve(jprob, SSAStepper(); saveat=0.333) #changed to 0.333 hrs to match measured data
-    GFP = sol[5,:][4500:4715]/1000000 #Changed to get values from indexes corresponding to past 1000hrs (steady state) now that there are 3x as many points saved in simulation output (only storing 216 data points) 
+    sol = solve(jprob, SSAStepper(); saveat=1/3) #changed to 0.333 hrs to match measured data
+    GFP = sol[5,:][end-215:end]/1000000 #Changed to get values from indexes corresponding to past 1000hrs (steady state) now that there are 3x as many points saved in simulation output (only storing 216 data points) 
     
     k1 = mean(GFP)
     k2 = var(GFP)
