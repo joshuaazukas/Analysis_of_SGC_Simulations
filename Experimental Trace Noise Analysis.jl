@@ -14,7 +14,7 @@ GFPexample = GFPexample[:];
 example_GFP = GFPexample[2:end,2:end]/1000000
 plot(example_GFP)
 time = round.(GFPexample[2:end,1].*0.33334, digits=2)
-
+time
 #frequency (1/1200s) measurement every 20 minutes
 freq=0.00083333
 #define lowpass filter cutoff and frequency
@@ -40,7 +40,7 @@ plot!(time,filt_GFP_example, label="Lowpass Filt.")
 plot!(time,example_GFP, label="exp")
 
 # visualize the frequency spectrum of the noise
-fft_result = fft(Example_Filt_minus)
+fft_result = fft(example_GFP)
 freqs = fftfreq(length(time), 0.00083333)
 plot(freqs[1:div(end,2)], abs.(fft_result[1:div(end,2)]), xlabel="Frequency (Hz)", ylabel="Magnitude", label="Frequency Spectrum")
 
@@ -51,7 +51,7 @@ GFPex = GFPex[:];
 time = round.(GFPex[2:end,1].*0.33334, digits=2)
 ex_GFP = GFPex[2:end,2:end]/1000000
 plot(time,ex_GFP,legend=:false)
-
+cols = size(ex_GFP,2);
 #calculate the temporal standard deviation for prefiltered experimental time traces
 exp_temp_std = []
 for i in 1:cols
@@ -72,6 +72,7 @@ filt_GFP = filtfilt(digitalfilter(lp,dmeth), ex_GFP[:,1])
 filt_GFP_traces = []
 filt_GFP_noise_traces = []
 GFP_means = []
+filtGFP_STD=[]
 GFP_STD = []
 # loop for performing the same analysis and noise addition as performed on the example time trace above
 # stores: Temporal mean of each trace prior to filtering, Filtered experimental traces, Standard deviation of the noise, and the filtered traces with the added noise
@@ -80,10 +81,13 @@ for i in 1:cols
     stdGFP=[]
     filt_noise=[]
     Ex_Filt=[]
+    stdfilt_GFP = []
     k1 = mean(ex_GFP[:,i])
     push!(GFP_means,k1)
     filt_GFP = filtfilt(digitalfilter(lp,dmeth), ex_GFP[:,i])
     push!(filt_GFP_traces,filt_GFP)
+    stdfilt_GFP = std(filt_GFP)
+    push!(filtGFP_STD,stdfilt_GFP)
     Ex_Filt=ex_GFP[:,i]-filt_GFP
     stdGFP=std(Ex_Filt)
     push!(GFP_STD,stdGFP)
@@ -91,9 +95,12 @@ for i in 1:cols
     filt_noise = filt_GFP+noise
     push!(filt_GFP_noise_traces, filt_noise)
 end
+plot(filt_GFP_traces,legend=:false)
 # store the temporal mean and standard deviation of the noise for each time trace
 GFP_exp_temp_u = reduce(vcat, transpose.(GFP_means))
 GFP_noise_std = reduce(vcat, transpose.(GFP_STD))
+#Store the temporal standard deviation of the filtered experimental time traces (befor adding noise back)
+filt_temp_std = reduce(vcat, transpose.(filtGFP_STD))
 #visualize the filtered experimental data with noise added back
 plot(filt_GFP_noise_traces, legend=:false)
 #format the filtered + noise traces into data frame
@@ -104,12 +111,15 @@ for i in 1:cols
     exp_filt_noise_stdGFP=std(dffilt_GFP_noise_traces[:,i])
     push!(exp_filt_noise_temp_std,exp_filt_noise_stdGFP)
 end
-histogram(exp_filt_noise_temp_std, bins=30, normed=:probability,color="grey",alpha=0.75, label="Filtered + Noise Traces")
-histogram!(exp_temp_std, bins=30, normed=:probability,color="red",alpha=0.75,label="Raw Experimental Traces",xlabel="Temporal Std",ylabel="Probability")
+histogram(exp_filt_noise_temp_std, bins=30, normed=:probability,color="grey",alpha=0.5, label="Filtered + Noise Traces")
+histogram!(exp_temp_std, bins=30, normed=:probability,color="red",alpha=0.5,label="Raw Experimental Traces",xlabel="Temporal Std",ylabel="Probability")
+#compare distributions of temporal standard deviation of the experimental traces and filtered experimental traces
+histogram(filt_temp_std, bins=30, normed=:probability,color="grey",alpha=0.5, label="Filtered Traces")
+histogram!(exp_temp_std, bins=30, normed=:probability,color="red",alpha=0.5,label="Raw Experimental Traces",xlabel="Temporal Std",ylabel="Probability")
 #plot the standard deviation of the noise against the temporal mean of the experimental data
 scatter(GFP_exp_temp_u,GFP_noise_std,xlabel="Temporal Mean Experimental Traces (# GFP x10^6)", ylabel="standard deviation of lowpass filtered\ndata subtracted experimental traces",legend=:false)
 #plot the standard deviation of the noise against the log10 transformed temporal mean of the experimental data
-scatter(log10.(GFP_exp_temp_u),(GFP_noise_std),xlabel="Temporal Mean Experimental Traces (# GFP x10^6)", ylabel="standard deviation of lowpass filtered\ndata subtracted experimental traces",legend=:false)
+scatter(log10.(GFP_exp_temp_u),log10.(GFP_noise_std),xlabel="Temporal Mean Experimental Traces (# GFP x10^6)", ylabel="standard deviation of lowpass filtered\ndata subtracted experimental traces",legend=:false)
 
 #save the data as a 
 #df = DataFrame(u=GFP_exp_temp_u,std=GFP_noise_std)

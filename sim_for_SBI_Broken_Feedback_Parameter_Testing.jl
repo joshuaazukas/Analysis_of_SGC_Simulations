@@ -15,9 +15,9 @@ tspan = (0.0, 2000);
 u0 = (DNAoff => 1, DNAon => 0, A => 1, RNA => 0, GFP => 0); #Changed to approximately level of GFP and RNA at steady state
 
 
-p = (kOn => 0.00009*60*60, kOff => 0.0001*60*60,  kTr => 310, kTl => 425, dM => 1, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
-ukOn = Normal(0.00009*60*60,0.2*0.00009*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
-ukOff = Normal(0.0001*60*60,0.2*0.0001*60*60)
+p = (kOn => 0.000042*60*60, kOff => 0.000052*60*60,  kTr => 310, kTl => 425, dM => 1, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
+ukOn = Normal(0.000042*60*60,0.2*0.000042*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
+ukOff = Normal(0.000052*60*60,0.2*0.00052*60*60)
 ukTr = Normal(310,150)
 # calculate gamma distribution for kTL with mean=310 and std=265
 g_scale = 80^2/425  #adjusted from 265^2/500
@@ -27,7 +27,7 @@ ukTl = Gamma(g_shape,g_scale)
 
 # Define maximum value
 max_value=[]
-max_value = 575
+max_value = 750
 
 # Function to sample with a maximum value
 function bounded_sample(distribution, max_value)
@@ -83,7 +83,7 @@ plot(sol, idxs=4,label="RNA")
 sim_sumstats_list = Vector{Float64}[]
 sim_params_list = Vector{Float64}[]
 sim_GFP=Vector{Float64}[]
-@time for i in 1:3
+@time for i in 1:1000
     if (i % 100)==0
         println(i)
     end 
@@ -122,6 +122,8 @@ sim_sumstats = reduce(vcat,transpose.(sim_sumstats_list))
 params = reduce(vcat,transpose.(sim_params_list))
 
 jldsave("noise_test.jld2"; sim_sumstats,params)
+
+@unpack sim_sumstats,params = jldopen("noise_test2.jld2")
 
 #Calculate summary statistics of the experimental data as performed on simulated data
 BFC_GFP=[]
@@ -347,4 +349,4 @@ min_edge = min(minimum(sim_sumstats[:,15]), minimum(ex_sumstats[:,15]))
 max_edge = max(maximum(sim_sumstats[:,15]), maximum(ex_sumstats[:,15]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,15], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label=" Exp k15")
-histogram!(sim_sumstats[:,15], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k15", ylabel="Probability", xlabel="k15", ylim=(0,0.225),xlim=(0,2))
+histogram!(sim_sumstats[:,15], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k15", ylabel="Probability", xlabel="k15", ylim=(0,0.4),xlim=(0,2))
