@@ -72,7 +72,7 @@ jprob = JumpProblem(rn, dprob, Direct(); save_positions = (false, false));
 states = unknowns(rn)
 params = parameters(rn)
 #define steady state section of simulation to where summary statistics will be calculated from
-GFP1 = sol[5,:][4500:4715]/1000000
+GFP1 = sol[5,:][end-215:end]/1000000
 #plot GFP and RNA values of the simulation
 plot(sol, idxs=5, label="GFP")
 plot(GFP1)
