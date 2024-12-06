@@ -5,6 +5,7 @@ using SymbolicIndexingInterface: parameter_values, state_values
 using SciMLStructures: Tunable, replace, replace!
 using JLD2, UnPack
 using XLSX
+using Polynomials
 
 @parameters kOn, kOff, kteton, ktetoff, kTr, kTl, dM, dG;
 @variables t;
@@ -120,11 +121,33 @@ sim_GFP=Vector{Float64}[]
 end
 
 plot!(legend=:false)
-plot(sim_GFP,legend=:false,xlabel="time points",ylabel="#GFP Molecules (10^6)",ylims=(0,80))
+plot(sim_GFP,legend=:false,xlabel="time points",ylabel="#GFP Molecules (10^6)")
 
 sim_sumstats=[];
 sim_sumstats = reduce(vcat,transpose.(sim_sumstats_list))
 params = reduce(vcat,transpose.(sim_params_list))
 sec_sim_traces = DataFrame([Symbol("Col$i") => vec for (i, vec) in enumerate(sim_GFP)])
 #CSV.write("TestName_traces.csv", sec_sim_traces)
-#jldsave("TestName.jld2"; sim_sumstats,params)
+jldsave("run3bfl.jld2"; sim_sumstats,params)
+
+# assemble all the simulations
+@unpack sim_sumstats,params = jldopen("run1bfl.jld2")
+sumstatst,paramst = sim_sumstats,params
+
+@unpack sim_sumstats,params = jldopen("run2bfc.jld2")
+sumstatst = vcat(sumstatst, sim_sumstats)
+paramst = vcat(paramst, params)
+
+@unpack sim_sumstats,params = jldopen("run3bfl.jld2")
+sumstatst = vcat(sumstatst, sim_sumstats)
+paramst = vcat(paramst, params)
+
+@unpack sim_sumstats,params = jldopen("run4bfc.jld2")
+sumstatst = vcat(sumstatst, sim_sumstats)
+paramst = vcat(paramst, params)
+
+jldsave("bfc.jld2"; sumstatst,paramst)
+
+# now add slope as another summary statistics
+@unpack sumstatst,paramst = jldopen("bfc.jld2")
+
