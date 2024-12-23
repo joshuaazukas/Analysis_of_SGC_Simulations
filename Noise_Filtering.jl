@@ -26,14 +26,14 @@ dmeth = Butterworth(2)
 filt_GFP1 = filtfilt(digitalfilter(lp,dmeth), HInd_GFP[:,1]*1000000)
 plot(time,filt_GFP1, label="Filtered GFP",color=:black)
 plot!(time,HInd_GFP[:,1]*1000000, label="Raw GFP", xlabel="Time (Hrs)", ylabel="# of GFP molecules", color=:green)
-plot()
+plot();
 for i in 1:cols
     fft_result = fft(HInd_GFP[:,i])
     freqs = fftfreq(length(time), 0.00083333)
     plot!(freqs[1:div(end,2)], abs.(fft_result[1:div(end,2)]), xlabel="Frequency (Hz)", ylabel="Magnitude", label="Frequency Spectrum")
 end
 vline!([0.000085],color=:black,legend=:false)
-plot!(legend=:false,xlimit=(-0.00001,0.00005))
+plot!(yscale=:log10,legend=:false)
 
 #define lowpass filter cutoff and frequency
 lp = Lowpass(0.000085, fs=0.00083333)
@@ -56,12 +56,12 @@ HInd_mCh = HInd_mCh[2:end,1:end]/1000000;
 plot(time,HInd_mCh,legend=:false,xlabel="#mCh (10^6)")
 plot();
 
-lp = Lowpass(0.000085, fs=0.00083333)
+lp = Lowpass(0.000001, fs=0.00083333) #0.000085
 dmeth = Butterworth(2)
 filt_mCh1 = filtfilt(digitalfilter(lp,dmeth), HInd_mCh[:,1]*1000000)
 plot(time,filt_mCh1, label="Filtered mCh",color=:black)
 plot!(time,HInd_mCh[:,1]*1000000, label="Raw mCh", xlabel="Time (Hrs)", ylabel="# of mCh molecules", color=:red)
-
+plot()
 for i in 1:cols
     fft_result = fft(HInd_mCh[:,i])
     freqs = fftfreq(length(time), 0.00083333)

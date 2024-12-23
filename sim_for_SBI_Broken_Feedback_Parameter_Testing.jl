@@ -13,18 +13,40 @@ using XLSX
 # Initial conditions and base parameters
 tspan = (0.0, 2000);
 u0 = (DNAoff => 1, DNAon => 0, A => 1, RNA => 0, GFP => 0); #Changed to approximately level of GFP and RNA at steady state
+time = round.(collect(0:215).*0.33334, digits=2);
 
-
-p = (kOn => 0.000042*60*60, kOff => 0.000052*60*60,  kTr => 310, kTl => 425, dM => 1, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
-ukOn = Normal(0.000042*60*60,0.2*0.000042*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
-ukOff = Normal(0.000052*60*60,0.2*0.00052*60*60)
+p = (kOn => 0.00009*60*60, kOff => 0.0001*60*60,  kTr => 310, kTl => 425, dM => 1, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
+ukOn = Normal(0.00009*60*60,0.2*0.00009*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
+ukOff = Normal(0.0001*60*60,0.2*0.0001*60*60)
 ukTr = Normal(310,150)
 # calculate gamma distribution for kTL with mean=310 and std=265
 g_scale = 80^2/425  #adjusted from 265^2/500
 g_shape = 425/g_scale
 ukTl = Gamma(g_shape,g_scale)
 
+kTr_g_scale = 150^2/310
+kTr_g_shape = 310/kTr_g_scale
+ukTrg = Gamma(kTr_g_shape,kTr_g_scale)
 
+dist_kOn = [];
+dist_kOff = [];
+dist_kTrg = [];
+dist_kTr = [];
+for i in 1:1000
+    # Generate a new sample
+    kOn_new = rand(ukOn)
+    push!(dist_kOn,kOn_new)
+    kOff_new = rand(ukOff)
+    push!(dist_kOff,kOff_new) 
+    kTr_new = rand(ukTr)
+    push!(dist_kTr,kTr_new)  
+    kTr_newg = rand(ukTrg)
+    push!(dist_kTrg,kTr_newg)
+end
+histogram(dist_kOn,bins=200,label="kOn")
+histogram(dist_kOff,bins=200,label="kOff")
+histogram(dist_kTr,bins=200,label="kTr")
+histogram(dist_kTrg,bins=200,label="kTrg")
 # Define maximum value
 max_value=[]
 max_value = 750
@@ -77,7 +99,7 @@ GFP1 = sol[5,:][4500:4715]/1000000
 plot(sol, idxs=5, label="GFP")
 plot(GFP1)
 plot(sol, idxs=4,label="RNA")
-
+slope = ((GFP1[end]-GFP1[1])/(time[end]-time[1]))
 
 #Setup for simulation loop
 sim_sumstats_list = Vector{Float64}[]
@@ -89,7 +111,7 @@ sim_GFP=Vector{Float64}[]
     end 
     kOn_new = rand(ukOn)
     kOff_new = rand(ukOff)
-    kTr_new = rand(ukTr)
+    kTr_new = bounded_sample(ukTrg,750)
     kTl_new = bounded_sample(ukTl, max_value)
     new_prob = remake(dprob; p = (kOn => kOn_new,
                             kOff => kOff_new,
@@ -99,19 +121,20 @@ sim_GFP=Vector{Float64}[]
     sol = solve(jprob, SSAStepper(); saveat=0.333) #changed to 0.333 hrs to match measured data
     GFP = sol[5,:][4500:4715]/1000000 #Changed to get values from indexes corresponding to past 1000hrs (steady state) now that there are 3x as many points saved in simulation output (only storing 216 data points) 
     
+    slope = ((GFP[end]-GFP[1])/(time[end]-time[1]))
     k1 = mean(GFP)
     k2 = var(GFP)
     k3 = mean((GFP.-k1).^3)
     k4 = mean((GFP.-k1).^4) .- 3*k2^2
     k5 = mean((GFP.-k1).^5) - 10*k3*k2
 
-    pw = welch_pgram(GFPN)
+    pw = welch_pgram(GFP)
     ps = pw.power[2:11]
     params = Float64[ kOn_new, kOff_new, kTr_new, kTl_new]
     plot!(sol, idxs=5, label="GFP $i")
-    push!(sim_GFP,GFPN)
+    push!(sim_GFP,GFP)
     push!(sim_params_list,params)
-    sim_sumstats = Float64[k1,k2,k3,k4,k5,ps...]
+    sim_sumstats = Float64[slope,k1,k2,k3,k4,k5,ps...]
     push!(sim_sumstats_list,sim_sumstats)
 end
 
@@ -121,10 +144,10 @@ sim_sumstats=[];
 sim_sumstats = reduce(vcat,transpose.(sim_sumstats_list))
 params = reduce(vcat,transpose.(sim_params_list))
 
-jldsave("noise_test.jld2"; sim_sumstats,params)
+jldsave("Slope Test 1.jld2"; sim_sumstats,params)
 
-@unpack sim_sumstats,params = jldopen("noise_test2.jld2")
-
+@unpack sumstatst,paramst = jldopen("bfc.jld2")
+sim_sumstats = sumstatst
 #Calculate summary statistics of the experimental data as performed on simulated data
 BFC_GFP=[]
 GFPex=[]
@@ -145,6 +168,7 @@ plot(ex_GFP, legend=:false,xlabel="time points",ylabel="#GFP Molecules (10^6)",y
 
 #loop calculates summary statistics for experimental time traces exactly as performed on the simulated time traces
 for i in 1:cols
+    slope = ((ex_GFP[end,i]-ex_GFP[1,i])/(time[end]-time[1]))
     k1 = mean(ex_GFP[:,i])
     k2 = var(ex_GFP[:,i])
     k3 = mean((ex_GFP[:,i].-k1).^3)
@@ -152,7 +176,7 @@ for i in 1:cols
     k5 = mean((ex_GFP[:,i].-k1).^5)-10*k3*k2
     pw = welch_pgram(ex_GFP[:,i])
     ps = pw.power[2:11]
-    ex_sumstats = Float64[k1,k2,k3,k4,k5,ps...]
+    ex_sumstats = Float64[slope,k1,k2,k3,k4,k5,ps...]
     push!(ex_sumstats_list,ex_sumstats)
 end
 ex_sumstats = reduce(vcat, transpose.(ex_sumstats_list));
