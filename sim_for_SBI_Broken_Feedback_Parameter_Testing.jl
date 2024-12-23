@@ -16,8 +16,8 @@ u0 = (DNAoff => 1, DNAon => 0, A => 1, RNA => 0, GFP => 0); #Changed to approxim
 time = round.(collect(0:215).*0.33334, digits=2);
 
 p = (kOn => 0.00009*60*60, kOff => 0.0001*60*60,  kTr => 310, kTl => 425, dM => 1, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
-ukOn = Normal(0.00009*60*60,0.2*0.00009*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
-ukOff = Normal(0.0001*60*60,0.2*0.0001*60*60)
+ukOn = Normal(0.0084*60*60,0.2*0.0084*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
+ukOff = Normal(0.0042*60*60,0.2*0.0042*60*60)
 ukTr = Normal(310,150)
 # calculate gamma distribution for kTL with mean=310 and std=265
 g_scale = 80^2/425  #adjusted from 265^2/500
@@ -49,29 +49,35 @@ histogram(dist_kTr,bins=200,label="kTr")
 histogram(dist_kTrg,bins=200,label="kTrg")
 # Define maximum value
 max_value=[]
+min_value=100
 max_value = 750
 
-# Function to sample with a maximum value
-function bounded_sample(distribution, max_value)
+# Function to sample with a min and maximum value
+function bounded_sample(distribution, max_value, min_value)
     while true
         sample = rand(distribution)
-        if sample <= max_value
+        if min_value <= sample <= max_value
             return sample
         end
     end
 end
 #create ukTl distribution with a maximum value
 dist_b_kTl=[]
+dist_b_kTr=[]
 for i in 1:1000
     # Generate a new sample
-    kTl_new = bounded_sample(ukTl, max_value)
+    kTl_new = bounded_sample(ukTl, max_value, min_value)
+    kTr_new = bounded_sample(ukTr,max_value, min_value)
     push!(dist_b_kTl,kTl_new)
+    push!(dist_b_kTr,kTr_new)
 end
 #visuallize the distribution sampled from and the resultant distribution of selected kTl values, representative of what will occur during the simulation loop
 kTl_x = 0:01:1000
 kTl_y = pdf.(ukTl,kTl_x)
 plot(kTl_x, kTl_y)
 histogram(dist_b_kTl,bins=200)
+histogram(dist_b_kTr,bins=200)
+
 # Define the reaction network
 rxs = [
     (@reaction kOn, DNAoff + A --> DNAon),
@@ -99,20 +105,21 @@ GFP1 = sol[5,:][4500:4715]/1000000
 plot(sol, idxs=5, label="GFP")
 plot(GFP1)
 plot(sol, idxs=4,label="RNA")
+plot(sol, idxs=3,label="Activator",xlims=(0,20))
 slope = ((GFP1[end]-GFP1[1])/(time[end]-time[1]))
 
 #Setup for simulation loop
 sim_sumstats_list = Vector{Float64}[]
 sim_params_list = Vector{Float64}[]
 sim_GFP=Vector{Float64}[]
-@time for i in 1:1000
+@time for i in 1:10
     if (i % 100)==0
         println(i)
     end 
     kOn_new = rand(ukOn)
     kOff_new = rand(ukOff)
-    kTr_new = bounded_sample(ukTrg,750)
-    kTl_new = bounded_sample(ukTl, max_value)
+    kTr_new = bounded_sample(ukTrg,750,min_value)
+    kTl_new = bounded_sample(ukTl, max_value,min_value)
     new_prob = remake(dprob; p = (kOn => kOn_new,
                             kOff => kOff_new,
                             kTr => kTr_new,
@@ -127,7 +134,7 @@ sim_GFP=Vector{Float64}[]
     k3 = mean((GFP.-k1).^3)
     k4 = mean((GFP.-k1).^4) .- 3*k2^2
     k5 = mean((GFP.-k1).^5) - 10*k3*k2
-
+    cv = k2/k1
     pw = welch_pgram(GFP)
     ps = pw.power[2:11]
     params = Float64[ kOn_new, kOff_new, kTr_new, kTl_new]
@@ -139,7 +146,7 @@ sim_GFP=Vector{Float64}[]
 end
 
 plot!(legend=:false)
-plot(sim_GFP,legend=:false,xlabel="time points",ylabel="#GFP Molecules (10^6)",ylims=(0,80))
+plot(time,sim_GFP[1,:]*1000000,legend=:false,xlabel="Time (hrs)",ylabel="#GFP Molecules (10^6)",yscale=:log10)
 sim_sumstats=[];
 sim_sumstats = reduce(vcat,transpose.(sim_sumstats_list))
 params = reduce(vcat,transpose.(sim_params_list))
@@ -176,201 +183,212 @@ for i in 1:cols
     k5 = mean((ex_GFP[:,i].-k1).^5)-10*k3*k2
     pw = welch_pgram(ex_GFP[:,i])
     ps = pw.power[2:11]
-    ex_sumstats = Float64[slope,k1,k2,k3,k4,k5,ps...]
+    cv = k2/k1
+    ex_sumstats = Float64[slope,k1,k2,k3,k4,k5,ps...,cv]
     push!(ex_sumstats_list,ex_sumstats)
 end
 ex_sumstats = reduce(vcat, transpose.(ex_sumstats_list));
 
+
+
+
 # Visually compare the summary statistics of the simulated time traces and the experimental time traces
 bins=200
 
-# mean
+# slope
 min_edge = min(minimum(sim_sumstats[:,1]), minimum(ex_sumstats[:,1]))
 max_edge = max(maximum(sim_sumstats[:,1]), maximum(ex_sumstats[:,1]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,1], normalize=:probability, color=:red, bins=bin_edges, alpha=0.5,label="Exp Temp Means")
+histogram(ex_sumstats[:,1], normalize=:probability, color=:red, bins=bin_edges, alpha=0.5,label="Exp Slope")
 #histogram!(sim_sumstats[:,1],bins=6000,color=:grey,alpha=0.5,label="Sim Temp Means")
-histogram!(sim_sumstats[:,1], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Means", ylabel="Probability", xlabel="Temporal Mean of GFP # (10^6)")
+histogram!(sim_sumstats[:,1], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Slope", ylabel="Probability", xlabel="Slope of GFP # (10^6)")
 #savefig(MeanHist_0_18xExp_vs_Sim_Broken.png)
 
-#variance
+#Mean
 min_edge = min(minimum(sim_sumstats[:,2]), minimum(ex_sumstats[:,2]))
 max_edge = max(maximum(sim_sumstats[:,2]), maximum(ex_sumstats[:,2]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,2], color=:red, normalize=:probability,  bins=bin_edges, alpha=0.5, label="Exp Temp Vars")
-histogram!(sim_sumstats[:,2], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Vars", ylabel="Probability", xlabel="Temporal Variation of GFP # (10^6)") #,ylim=(0,0.125),xlim=(0,20)
+histogram(ex_sumstats[:,2], color=:red, normalize=:probability,  bins=bin_edges, alpha=0.5, label="Exp Temp Mean")
+histogram!(sim_sumstats[:,2], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Mean", ylabel="Probability", xlabel="Temporal Mean of GFP # (10^6)") #,ylim=(0,0.125),xlim=(0,20)
 
-min_edge = min(minimum(sim_sumstats[:,2]), minimum(ex_sumstats[:,2]))
-max_edge = max(maximum(sim_sumstats[:,2]), maximum(ex_sumstats[:,2]))
+# Variance
+min_edge = min(minimum(sim_sumstats[:,3]), minimum(ex_sumstats[:,3]))
+max_edge = max(maximum(sim_sumstats[:,3]), maximum(ex_sumstats[:,3]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,2], color=:red, normalize=:probability,  bins=bin_edges, alpha=0.5, label="Exp Temp Vars")
-histogram!(sim_sumstats[:,2], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Vars", ylabel="Probability", xlabel="Temporal Variation of GFP # (10^6)",ylim=(0,0.125),xlim=(0,20))
+histogram(ex_sumstats[:,3], color=:red, normalize=:probability,  bins=bin_edges, alpha=0.5, label="Exp Temp Vars")
+histogram!(sim_sumstats[:,3], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Vars", ylabel="Probability", xlabel="Temporal Variance of GFP # (10^6)") #,ylim=(0,0.125),xlim=(0,20)
+
+min_edge = min(minimum(sim_sumstats[:,17]), minimum(ex_sumstats[:,17]))
+max_edge = max(maximum(sim_sumstats[:,17]), maximum(ex_sumstats[:,17]))
+bin_edges = range(min_edge, max_edge, length=bins)
+histogram(ex_sumstats[:,17], color=:red, normalize=:probability,  bins=200, alpha=0.5, label="Exp Temp CV")
+histogram!(sim_sumstats[:,17], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Vars", ylabel="Probability", xlabel="Temporal CV of GFP # (10^6)")
 
 #k3 - skewness
-min_edge = min(minimum(sim_sumstats[:,3]), minimum(ex_sumstats[:,3]))
-max_edge = max(maximum(sim_sumstats[:,3]), maximum(ex_sumstats[:,3]))
+min_edge = min(minimum(sim_sumstats[:,4]), minimum(ex_sumstats[:,4]))
+max_edge = max(maximum(sim_sumstats[:,4]), maximum(ex_sumstats[:,4]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,3], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k3")
-histogram!(sim_sumstats[:,3], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k3", ylabel="Probability", xlabel="k3") #, ylim=(0,0.20), xlim=(-30,50)
+histogram(ex_sumstats[:,4], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k3")
+histogram!(sim_sumstats[:,4], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k3", ylabel="Probability", xlabel="k3") #, ylim=(0,0.20), xlim=(-30,50)
 
-min_edge = min(minimum(sim_sumstats[:,3]), minimum(ex_sumstats[:,3]))
-max_edge = max(maximum(sim_sumstats[:,3]), maximum(ex_sumstats[:,3]))
+min_edge = min(minimum(sim_sumstats[:,4]), minimum(ex_sumstats[:,4]))
+max_edge = max(maximum(sim_sumstats[:,4]), maximum(ex_sumstats[:,4]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,3], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k3")
-histogram!(sim_sumstats[:,3], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k3", ylabel="Probability", xlabel="k3", ylim=(0,0.20), xlim=(-30,50))
+histogram(ex_sumstats[:,4], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k3")
+histogram!(sim_sumstats[:,4], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k3", ylabel="Probability", xlabel="k3", ylim=(0,0.20), xlim=(-30,50))
 
 #k4 - Kurtosis
-min_edge = min(minimum(sim_sumstats[:,4]), minimum(ex_sumstats[:,4]))
-max_edge = max(maximum(sim_sumstats[:,4]), maximum(ex_sumstats[:,4]))
+min_edge = min(minimum(sim_sumstats[:,5]), minimum(ex_sumstats[:,5]))
+max_edge = max(maximum(sim_sumstats[:,5]), maximum(ex_sumstats[:,5]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,4],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k4")
-histogram!(sim_sumstats[:,4], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k4", ylabel="Probability", xlabel="k4") #, ylim=(0,0.20), xlim=(-500,250)
+histogram(ex_sumstats[:,5],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k4")
+histogram!(sim_sumstats[:,5], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k4", ylabel="Probability", xlabel="k4") #, ylim=(0,0.20), xlim=(-500,250)
 
-min_edge = min(minimum(sim_sumstats[:,4]), minimum(ex_sumstats[:,4]))
-max_edge = max(maximum(sim_sumstats[:,4]), maximum(ex_sumstats[:,4]))
+min_edge = min(minimum(sim_sumstats[:,5]), minimum(ex_sumstats[:,5]))
+max_edge = max(maximum(sim_sumstats[:,5]), maximum(ex_sumstats[:,5]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,4],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k4")
-histogram!(sim_sumstats[:,4], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k4", ylabel="Probability", xlabel="k4", ylim=(0,0.20), xlim=(-500,250))
+histogram(ex_sumstats[:,5],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k4")
+histogram!(sim_sumstats[:,5], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k4", ylabel="Probability", xlabel="k4", ylim=(0,0.20), xlim=(-500,250))
 
 #k5
-min_edge = min(minimum(sim_sumstats[:,5]), minimum(ex_sumstats[:,5]))
-max_edge = max(maximum(sim_sumstats[:,5]), maximum(ex_sumstats[:,5]))
+min_edge = min(minimum(sim_sumstats[:,6]), minimum(ex_sumstats[:,6]))
+max_edge = max(maximum(sim_sumstats[:,6]), maximum(ex_sumstats[:,6]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,5],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k5")
-histogram!(sim_sumstats[:,5], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k5", ylabel="Probability", xlabel="k5") #, ylim=(0,0.20),xlim=(-10000,5000)
+histogram(ex_sumstats[:,6],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k5")
+histogram!(sim_sumstats[:,6], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k5", ylabel="Probability", xlabel="k5") #, ylim=(0,0.20),xlim=(-10000,5000)
 
-min_edge = min(minimum(sim_sumstats[:,5]), minimum(ex_sumstats[:,5]))
-max_edge = max(maximum(sim_sumstats[:,5]), maximum(ex_sumstats[:,5]))
+min_edge = min(minimum(sim_sumstats[:,6]), minimum(ex_sumstats[:,6]))
+max_edge = max(maximum(sim_sumstats[:,6]), maximum(ex_sumstats[:,6]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,5],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k5")
-histogram!(sim_sumstats[:,5], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k5", ylabel="Probability", xlabel="k5", ylim=(0,0.20),xlim=(-10000,5000))
+histogram(ex_sumstats[:,6],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k5")
+histogram!(sim_sumstats[:,6], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k5", ylabel="Probability", xlabel="k5", ylim=(0,0.20),xlim=(-10000,5000))
 
 #power spectrum
-min_edge = min(minimum(sim_sumstats[:,6]), minimum(ex_sumstats[:,6]))
-max_edge = max(maximum(sim_sumstats[:,6]), maximum(ex_sumstats[:,6]))
+min_edge = min(minimum(sim_sumstats[:,7]), minimum(ex_sumstats[:,7]))
+max_edge = max(maximum(sim_sumstats[:,7]), maximum(ex_sumstats[:,7]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,6], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k6")
-histogram!(sim_sumstats[:,6], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k6", ylabel="Probability", xlabel="k6") #, ylim=(0,0.085),xlim=(0,10)
-
-min_edge = min(minimum(sim_sumstats[:,6]), minimum(ex_sumstats[:,6]))
-max_edge = max(maximum(sim_sumstats[:,6]), maximum(ex_sumstats[:,6]))
-bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,6], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k6")
-histogram!(sim_sumstats[:,6], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k6", ylabel="Probability", xlabel="k6", ylim=(0,0.085),xlim=(0,10))
-
+histogram(ex_sumstats[:,7], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k6")
+histogram!(sim_sumstats[:,7], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k6", ylabel="Probability", xlabel="k6") #, ylim=(0,0.085),xlim=(0,10)
 
 min_edge = min(minimum(sim_sumstats[:,7]), minimum(ex_sumstats[:,7]))
 max_edge = max(maximum(sim_sumstats[:,7]), maximum(ex_sumstats[:,7]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,7], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k7")
-histogram!(sim_sumstats[:,7], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k7", ylabel="Probability", xlabel="k7") #, ylim=(0,0.1),xlim=(0,3)
-
-min_edge = min(minimum(sim_sumstats[:,7]), minimum(ex_sumstats[:,7]))
-max_edge = max(maximum(sim_sumstats[:,7]), maximum(ex_sumstats[:,7]))
-bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,7], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k7")
-histogram!(sim_sumstats[:,7], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k7", ylabel="Probability", xlabel="k7", ylim=(0,0.1),xlim=(0,3))
+histogram(ex_sumstats[:,7], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k6")
+histogram!(sim_sumstats[:,7], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k6", ylabel="Probability", xlabel="k6", ylim=(0,0.085),xlim=(0,10))
 
 
 min_edge = min(minimum(sim_sumstats[:,8]), minimum(ex_sumstats[:,8]))
 max_edge = max(maximum(sim_sumstats[:,8]), maximum(ex_sumstats[:,8]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,8], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k8")
-histogram!(sim_sumstats[:,8], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k8", ylabel="Probability", xlabel="k8") #, ylim=(0,0.1),xlim=(0,2.25)
+histogram(ex_sumstats[:,8], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k7")
+histogram!(sim_sumstats[:,8], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k7", ylabel="Probability", xlabel="k7") #, ylim=(0,0.1),xlim=(0,3)
 
 min_edge = min(minimum(sim_sumstats[:,8]), minimum(ex_sumstats[:,8]))
 max_edge = max(maximum(sim_sumstats[:,8]), maximum(ex_sumstats[:,8]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,8], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k8")
-histogram!(sim_sumstats[:,8], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k8", ylabel="Probability", xlabel="k8", ylim=(0,0.1),xlim=(0,2.25))
+histogram(ex_sumstats[:,8], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k7")
+histogram!(sim_sumstats[:,8], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k7", ylabel="Probability", xlabel="k7", ylim=(0,0.1),xlim=(0,3))
 
 
 min_edge = min(minimum(sim_sumstats[:,9]), minimum(ex_sumstats[:,9]))
 max_edge = max(maximum(sim_sumstats[:,9]), maximum(ex_sumstats[:,9]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,9], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k9")
-histogram!(sim_sumstats[:,9], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k9", ylabel="Probability", xlabel="k9") #, ylim=(0,0.1),xlim=(0,1.75)
+histogram(ex_sumstats[:,9], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k8")
+histogram!(sim_sumstats[:,9], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k8", ylabel="Probability", xlabel="k8") #, ylim=(0,0.1),xlim=(0,2.25)
 
 min_edge = min(minimum(sim_sumstats[:,9]), minimum(ex_sumstats[:,9]))
 max_edge = max(maximum(sim_sumstats[:,9]), maximum(ex_sumstats[:,9]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,9], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k9")
-histogram!(sim_sumstats[:,9], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k9", ylabel="Probability", xlabel="k9", ylim=(0,0.1),xlim=(0,1.75))
+histogram(ex_sumstats[:,9], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k8")
+histogram!(sim_sumstats[:,9], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k8", ylabel="Probability", xlabel="k8", ylim=(0,0.1),xlim=(0,2.25))
 
 
 min_edge = min(minimum(sim_sumstats[:,10]), minimum(ex_sumstats[:,10]))
 max_edge = max(maximum(sim_sumstats[:,10]), maximum(ex_sumstats[:,10]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,10], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k10")
-histogram!(sim_sumstats[:,10], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k10", ylabel="Probability", xlabel="k10") #, ylim=(0,0.1),xlim=(0,1.75)
+histogram(ex_sumstats[:,10], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k9")
+histogram!(sim_sumstats[:,10], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k9", ylabel="Probability", xlabel="k9") #, ylim=(0,0.1),xlim=(0,1.75)
 
 min_edge = min(minimum(sim_sumstats[:,10]), minimum(ex_sumstats[:,10]))
 max_edge = max(maximum(sim_sumstats[:,10]), maximum(ex_sumstats[:,10]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,10], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k10")
-histogram!(sim_sumstats[:,10], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k10", ylabel="Probability", xlabel="k10", ylim=(0,0.1),xlim=(0,1.75))
+histogram(ex_sumstats[:,10], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k9")
+histogram!(sim_sumstats[:,10], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k9", ylabel="Probability", xlabel="k9", ylim=(0,0.1),xlim=(0,1.75))
 
 
 min_edge = min(minimum(sim_sumstats[:,11]), minimum(ex_sumstats[:,11]))
 max_edge = max(maximum(sim_sumstats[:,11]), maximum(ex_sumstats[:,11]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,11], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k11")
-histogram!(sim_sumstats[:,11], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k11", ylabel="Probability", xlabel="k11") #, ylim=(0,0.225),xlim=(0,3)
+histogram(ex_sumstats[:,11], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k10")
+histogram!(sim_sumstats[:,11], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k10", ylabel="Probability", xlabel="k10") #, ylim=(0,0.1),xlim=(0,1.75)
 
 min_edge = min(minimum(sim_sumstats[:,11]), minimum(ex_sumstats[:,11]))
 max_edge = max(maximum(sim_sumstats[:,11]), maximum(ex_sumstats[:,11]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,11], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k11")
-histogram!(sim_sumstats[:,11], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k11", ylabel="Probability", xlabel="k11", ylim=(0,0.225),xlim=(0,3))
+histogram(ex_sumstats[:,11], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k10")
+histogram!(sim_sumstats[:,11], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k10", ylabel="Probability", xlabel="k10", ylim=(0,0.1),xlim=(0,1.75))
 
 
 min_edge = min(minimum(sim_sumstats[:,12]), minimum(ex_sumstats[:,12]))
 max_edge = max(maximum(sim_sumstats[:,12]), maximum(ex_sumstats[:,12]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,12], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k12")
-histogram!(sim_sumstats[:,12], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k12", ylabel="Probability", xlabel="k12") #, ylim=(0,0.175),xlim=(0,1.25)
+histogram(ex_sumstats[:,12], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k11")
+histogram!(sim_sumstats[:,12], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k11", ylabel="Probability", xlabel="k11") #, ylim=(0,0.225),xlim=(0,3)
 
 min_edge = min(minimum(sim_sumstats[:,12]), minimum(ex_sumstats[:,12]))
 max_edge = max(maximum(sim_sumstats[:,12]), maximum(ex_sumstats[:,12]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,12], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k12")
-histogram!(sim_sumstats[:,12], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k12", ylabel="Probability", xlabel="k12", ylim=(0,0.175),xlim=(0,1.25))
+histogram(ex_sumstats[:,12], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k11")
+histogram!(sim_sumstats[:,12], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k11", ylabel="Probability", xlabel="k11", ylim=(0,0.225),xlim=(0,3))
 
 
 min_edge = min(minimum(sim_sumstats[:,13]), minimum(ex_sumstats[:,13]))
 max_edge = max(maximum(sim_sumstats[:,13]), maximum(ex_sumstats[:,13]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,13], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k13")
-histogram!(sim_sumstats[:,13], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k13", ylabel="Probability", xlabel="k13") #, ylim=(0,0.175),xlim=(0,1.25)
+histogram(ex_sumstats[:,13], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k12")
+histogram!(sim_sumstats[:,13], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k12", ylabel="Probability", xlabel="k12") #, ylim=(0,0.175),xlim=(0,1.25)
 
 min_edge = min(minimum(sim_sumstats[:,13]), minimum(ex_sumstats[:,13]))
 max_edge = max(maximum(sim_sumstats[:,13]), maximum(ex_sumstats[:,13]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,13], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k13")
-histogram!(sim_sumstats[:,13], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k13", ylabel="Probability", xlabel="k13", ylim=(0,0.175),xlim=(0,1.25))
+histogram(ex_sumstats[:,13], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k12")
+histogram!(sim_sumstats[:,13], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k12", ylabel="Probability", xlabel="k12", ylim=(0,0.175),xlim=(0,1.25))
 
 
 min_edge = min(minimum(sim_sumstats[:,14]), minimum(ex_sumstats[:,14]))
 max_edge = max(maximum(sim_sumstats[:,14]), maximum(ex_sumstats[:,14]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,14], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k14")
-histogram!(sim_sumstats[:,14], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k14", ylabel="Probability", xlabel="k14") #, ylim=(0,0.185),xlim=(0,1.85)
+histogram(ex_sumstats[:,14], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k13")
+histogram!(sim_sumstats[:,14], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k13", ylabel="Probability", xlabel="k13") #, ylim=(0,0.175),xlim=(0,1.25)
 
 min_edge = min(minimum(sim_sumstats[:,14]), minimum(ex_sumstats[:,14]))
 max_edge = max(maximum(sim_sumstats[:,14]), maximum(ex_sumstats[:,14]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,14], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k14")
-histogram!(sim_sumstats[:,14], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k14", ylabel="Probability", xlabel="k14", ylim=(0,0.185),xlim=(0,1.85))
+histogram(ex_sumstats[:,14], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k13")
+histogram!(sim_sumstats[:,14], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k13", ylabel="Probability", xlabel="k13", ylim=(0,0.175),xlim=(0,1.25))
 
 
 min_edge = min(minimum(sim_sumstats[:,15]), minimum(ex_sumstats[:,15]))
 max_edge = max(maximum(sim_sumstats[:,15]), maximum(ex_sumstats[:,15]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,15], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label=" Exp k15")
-histogram!(sim_sumstats[:,15], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k15", ylabel="Probability", xlabel="k15") #, ylim=(0,0.225),xlim=(0,2)
+histogram(ex_sumstats[:,15], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k14")
+histogram!(sim_sumstats[:,15], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k14", ylabel="Probability", xlabel="k14") #, ylim=(0,0.185),xlim=(0,1.85)
 
 min_edge = min(minimum(sim_sumstats[:,15]), minimum(ex_sumstats[:,15]))
 max_edge = max(maximum(sim_sumstats[:,15]), maximum(ex_sumstats[:,15]))
 bin_edges = range(min_edge, max_edge, length=bins)
-histogram(ex_sumstats[:,15], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label=" Exp k15")
-histogram!(sim_sumstats[:,15], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k15", ylabel="Probability", xlabel="k15", ylim=(0,0.4),xlim=(0,2))
+histogram(ex_sumstats[:,15], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k14")
+histogram!(sim_sumstats[:,15], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k14", ylabel="Probability", xlabel="k14", ylim=(0,0.185),xlim=(0,1.85))
+
+
+min_edge = min(minimum(sim_sumstats[:,16]), minimum(ex_sumstats[:,16]))
+max_edge = max(maximum(sim_sumstats[:,16]), maximum(ex_sumstats[:,16]))
+bin_edges = range(min_edge, max_edge, length=bins)
+histogram(ex_sumstats[:,16], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label=" Exp k15")
+histogram!(sim_sumstats[:,16], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k15", ylabel="Probability", xlabel="k15") #, ylim=(0,0.225),xlim=(0,2)
+
+min_edge = min(minimum(sim_sumstats[:,16]), minimum(ex_sumstats[:,16]))
+max_edge = max(maximum(sim_sumstats[:,16]), maximum(ex_sumstats[:,16]))
+bin_edges = range(min_edge, max_edge, length=bins)
+histogram(ex_sumstats[:,16], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label=" Exp k15")
+histogram!(sim_sumstats[:,16], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k15", ylabel="Probability", xlabel="k15", ylim=(0,0.4),xlim=(0,2))

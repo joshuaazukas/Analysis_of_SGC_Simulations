@@ -17,9 +17,9 @@ u0 = [DNAoff => 1, DNAon => 0, A => 1, RNA => 0, GFP => 0]; #Changed to approxim
 
 
 #p = [kOn => 0.00042*60*60, kOff => 0.0042*60*60,  kTr => 310, kTl => 425, dM => 1, dG => 0.00365] #parameter set for NO FEEDBACK Circuit
-p = (kOn => 0.00009*60*60, kOff => 0.0001*60*60,  kTr => 310, kTl => 425, dM => 1, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
-ukOn = Normal(0.00009*60*60,0.2*0.00009*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
-ukOff = Normal(0.0001*60*60,0.2*0.0001*60*60)
+p = (kOn => 0.00042*60*60, kOff => 0.0042*60*60,  kTr => 310, kTl => 425, dM => 1, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
+ukOn = Normal(0.00042*60*60,0.2*0.00042*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
+ukOff = Normal(0.0042*60*60,0.2*0.0042*60*60)
 ukTr = Normal(310,150)
 # calculate gamma distribution for kTL with mean=310 and std=265
 g_scale = 80^2/425  #adjusted from 265^2/500
@@ -92,7 +92,7 @@ savefig("activator.png")
 sim_sumstats_list = Vector{Float64}[]
 sim_params_list = Vector{Float64}[]
 sim_GFP=Vector{Float64}[]
-@time for i in 1:49800
+@time for i in 1:10
     if (i % 100)==0
         println(i)
     end 
@@ -106,7 +106,7 @@ sim_GFP=Vector{Float64}[]
                             kOff => kOff_new,
                             kTr => kTr_new,
                             kTl => kTl_new],
-                            u0 = [DNAoff => 1, DNAon => 0, A => 1, RNA => u0RNA, GFP => u0GFP],
+                            u0 = [DNAoff => 1, DNAon => 0, A => 1, RNA => round(Int64,u0RNA), GFP => round(Int64,u0GFP)],
                             tspan = (0.0,300.0))
     jprob = JumpProblem(rn, new_prob, Direct(); save_positions = (false, false));
     sol = solve(jprob, SSAStepper(); saveat=1/3) #changed to 0.333 hrs to match measured data
@@ -117,14 +117,16 @@ sim_GFP=Vector{Float64}[]
     k3 = mean((GFP.-k1).^3)
     k4 = mean((GFP.-k1).^4) .- 3*k2^2
     k5 = mean((GFP.-k1).^5) - 10*k3*k2
+    cv = k2/k1
 
     pw = welch_pgram(GFP)
     ps = pw.power[2:11]
     params = Float64[ kOn_new, kOff_new, kTr_new, kTl_new]
+
     plot!(sol, idxs=5, label="GFP $i")
     push!(sim_GFP,GFP)
     push!(sim_params_list,params)
-    sim_sumstats = Float64[k1,k2,k3,k4,k5,ps...]
+    sim_sumstats = Float64[k1,k2,k3,k4,k5,ps...,cv]
     push!(sim_sumstats_list,sim_sumstats)
 end
 
