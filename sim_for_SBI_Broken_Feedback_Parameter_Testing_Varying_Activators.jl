@@ -6,31 +6,46 @@ using SciMLStructures: Tunable, replace, replace!
 using JLD2, UnPack
 using XLSX
 
-@parameters kOn, kOff, kteton, ktetoff, kTr, kTl, dM, dG;
+@parameters kOn, kOff, kteton, ktetoff, kTr, kTrOn, kTrOff, kTrF, kTl, dM, dG;
 @variables t;
-@species A(t), DNAoff(t), DNAon(t), RNA(t), GFP(t);
+@species A(t), B(t), DNAoff(t), DNAon(t), DNAonF(t), RNA(t), GFP(t);
 
 # Initial conditions and base parameters
 tspan = (0.0, 2000);
-u0 = (DNAoff => 1, DNAon => 0, A => 1, RNA => 0, GFP => 0); #Changed to approximately level of GFP and RNA at steady state
+u0 = (DNAoff => 1, DNAon => 0, A => 1, B => 1, DNAonF => 0, RNA => 0, GFP => 0); #Changed to approximately level of GFP and RNA at steady state
 time = round.(collect(0:215).*0.33334, digits=2);
 
-p = (kOn => 0.00033*60*60, kOff => 0.00033*60*60,  kTr => 310, kTl => 425, dM => 0.75, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
+p = (kOn => 0.00033*60*60, kOff => 0.00066*60*60,  kTr => 220, kTrOn => 0.00033*60*60, kTrOff => 0.00066*60*60, kTrF => 500, kTl => 425, dM => 0.75, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
 ukOn = Normal(0.00033*60*60,0.2*0.00033*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
-ukOff = Normal(0.00033*60*60,0.2*0.00033*60*60)
+ukOff = Normal(0.00066*60*60,0.2*0.00066*60*60)
+ukTrOn = Normal(0.00033*60*60,0.2*0.00033*60*60)
+ukTrOff = Normal(0.00066*60*60, 0.2*0.00066*60*60)
 ukTr = Normal(310,150)
 # calculate gamma distribution for kTL with mean=310 and std=265
 g_scale = 80^2/425  #adjusted from 265^2/500
 g_shape = 425/g_scale
 ukTl = Gamma(g_shape,g_scale)
 
-kTr_g_scale = 150^2/310
-kTr_g_shape = 310/kTr_g_scale
+kTr_g_scale = 60^2/220
+kTr_g_shape =220/kTr_g_scale
 ukTrg = Gamma(kTr_g_shape,kTr_g_scale)
+
+kTrF_g_scale = 100^2/600
+kTrF_g_shape = 600/kTr_g_scale
+ukTrFg = Gamma(kTrF_g_shape,kTrF_g_scale)
+
+kTr_x = 0:01:1000
+kTr_y = pdf.(ukTrg ,kTr_x)
+plot(kTr_x, kTr_y)
+
+kTrF_x = 0:01:1000
+kTrF_y = pdf.(ukTrFg ,kTrF_x)
+plot(kTrF_x, kTrF_y)
 
 dist_kOn = [];
 dist_kOff = [];
 dist_kTrg = [];
+dist_kTrFg = [];
 dist_kTr = [];
 for i in 1:1000
     # Generate a new sample
@@ -42,11 +57,14 @@ for i in 1:1000
     push!(dist_kTr,kTr_new)  
     kTr_newg = rand(ukTrg)
     push!(dist_kTrg,kTr_newg)
+    kTrF_newg = rand(ukTrFg)
+    push!(dist_kTrFg,kTrF_newg)
 end
 histogram(dist_kOn,bins=200,label="kOn")
 histogram(dist_kOff,bins=200,label="kOff")
 histogram(dist_kTr,bins=200,label="kTr")
 histogram(dist_kTrg,bins=200,label="kTrg")
+histogram(dist_kTrFg,bins=200,label="kTrgF")
 # Define maximum value
 max_value=[]
 min_value=100
@@ -62,34 +80,41 @@ function bounded_sample(distribution, max_value, min_value)
     end
 end
 #create ukTl distribution with a maximum value
-dist_b_kTl=[]
-dist_b_kTr=[]
+dist_b_kTl=[];
+dist_b_kTr=[];
+dist_b_kTrF=[];
 for i in 1:1000
     # Generate a new sample
     kTl_new = bounded_sample(ukTl, max_value, min_value)
-    kTr_new = bounded_sample(ukTr,max_value, min_value)
+    kTr_new = bounded_sample(ukTrg,325, 100)
+    kTrF_new = bounded_sample(ukTrFg,750, 325)
     push!(dist_b_kTl,kTl_new)
     push!(dist_b_kTr,kTr_new)
+    push!(dist_b_kTrF,kTrF_new)
 end
 #visuallize the distribution sampled from and the resultant distribution of selected kTl values, representative of what will occur during the simulation loop
 kTl_x = 0:01:1000
 kTl_y = pdf.(ukTl,kTl_x)
 plot(kTl_x, kTl_y)
 histogram(dist_b_kTl,bins=200)
-histogram(dist_b_kTr,bins=200)
 
+histogram(dist_b_kTrF,bins=200,color=:blue)
+histogram!(dist_b_kTr,bins=200,color=:red)
 # Define the reaction network
 rxs = [
     (@reaction kOn, DNAoff + A --> DNAon),
     (@reaction kOff, DNAon --> DNAoff + A),
     (@reaction kTr, DNAon --> DNAon + RNA),
+    (@reaction kTrOn, DNAoff + B --> DNAonF),
+    (@reaction kTrOff, DNAonF --> DNAoff + B),
+    (@reaction kTrF, DNAonF --> DNAonF + RNA),
     (@reaction kTl, RNA --> RNA + GFP),
     (@reaction dM, RNA --> 0),
     (@reaction dG, GFP --> 0),
 ];
 # single run before starting loop to check how the "average" trace will look based on parameters    
 # Create the ReactionSystem
-@named rn = ReactionSystem(rxs, t, [A, DNAoff, DNAon, RNA, GFP], [kOn, kOff, kTr, kTl, dM, dG]);
+@named rn = ReactionSystem(rxs, t, [A, B, DNAoff, DNAon, DNAonF, RNA, GFP], [kOn, kOff, kTr, kTrOn, kTrOff, kTrF, kTl, dM, dG]);
 rn = complete(rn);
 
 # Define and solve the problem
@@ -100,12 +125,14 @@ jprob = JumpProblem(rn, dprob, Direct(); save_positions = (false, false));
 states = unknowns(rn)
 params = parameters(rn)
 #define steady state section of simulation to where summary statistics will be calculated from
-GFP1 = sol[5,:][4500:4715]/1000000
+GFP1 = sol[7,:][4500:4715]/1000000
 #plot GFP and RNA values of the simulation
-plot(sol, idxs=5, label="GFP")
+plot(sol, idxs=7, label="GFP")
 plot(GFP1)
-plot(sol, idxs=4,label="RNA")
-plot(sol, idxs=3,label="Activator",xlims=(1500,1572))
+plot(sol, idxs=6,label="RNA")
+plot(sol, idxs=5,label="DNAonF",xlims=(1500,1572))
+plot(sol, idxs=4,label="DNAon",xlims=(1500,1572))
+plot(sol, idxs=3,label="DNAoff",xlims=(1500,1572))
 slope = ((GFP1[end]-GFP1[1])/(time[end]-time[1]))
 
 #Setup for simulation loop
@@ -114,21 +141,26 @@ simn_sumstats_list = Vector{Float64}[]
 sim_params_list = Vector{Float64}[]
 sim_GFP=Vector{Float64}[]
 simn_GFP=Vector{Float64}[]
-@time for i in 1:2500
+plot();
+@time for i in 1:1000
     if (i % 100)==0
         println(i)
     end 
     kOn_new = rand(ukOn)
     kOff_new = rand(ukOff)
-    kTr_new = bounded_sample(ukTrg,750,min_value)
+    kTrOn_new = rand(ukTrOn)
+    kTrOff_new = rand(ukTrOff)
+    kTr_new = bounded_sample(ukTrg, 325, 100)
     kTl_new = bounded_sample(ukTl, max_value,min_value)
+    kTrF_new = bounded_sample(ukTrFg, 750, 250)
     new_prob = remake(dprob; p = (kOn => kOn_new,
                             kOff => kOff_new,
                             kTr => kTr_new,
+                            kTrF => kTrF_new,
                             kTl => kTl_new))
     jprob = JumpProblem(rn, new_prob, Direct(); save_positions = (false, false));
     sol = solve(jprob, SSAStepper(); saveat=0.333) #changed to 0.333 hrs to match measured data
-    GFP = sol[5,:][4500:4715]/1000000 #Changed to get values from indexes corresponding to past 1000hrs (steady state) now that there are 3x as many points saved in simulation output (only storing 216 data points) 
+    GFP = sol[7,:][4500:4715]/1000000 #Changed to get values from indexes corresponding to past 1000hrs (steady state) now that there are 3x as many points saved in simulation output (only storing 216 data points) 
     
     slope = ((GFP[end]-GFP[1])/(time[end]-time[1]))
     k1 = mean(GFP)
@@ -140,7 +172,7 @@ simn_GFP=Vector{Float64}[]
     pw = welch_pgram(GFP)
     ps = pw.power[2:11]
     params = Float64[ kOn_new, kOff_new, kTr_new, kTl_new]
-    plot!(sol, idxs=5, label="GFP $i")
+    plot!(sol, idxs=7, label="GFP $i")
     push!(sim_GFP,GFP)
     push!(sim_params_list,params)
     sim_sumstats = Float64[slope,k1,k2,k3,k4,k5,ps...,cv]
@@ -180,7 +212,7 @@ params = reduce(vcat,transpose.(sim_params_list))
 
 
 
-jldsave("0_00033_0.75_noise.jld2"; sim_sumstats,simn_sumstats,params)
+jldsave("0_00033_0.75_noise_2DNABind_2.jld2"; sim_sumstats,simn_sumstats,params)
 
 #@unpack sumstatst,paramst = jldopen("bfc.jld2")
 #sim_sumstats = sumstatst

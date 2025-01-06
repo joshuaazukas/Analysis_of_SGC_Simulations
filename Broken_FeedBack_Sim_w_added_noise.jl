@@ -115,7 +115,7 @@ sim_GFPN=Vector{Float64}[]
 
     #add noise
     y=()
-    y = 0.0001*(k1o^2) + 0.0068*k1o + 0.1146
+    y = 0.0000492*(k1o^2) + 0.0102*k1o + 0.0685
     noise = y.*randn(216)
     GFPN = GFP+noise
     k1 = mean(GFPN)

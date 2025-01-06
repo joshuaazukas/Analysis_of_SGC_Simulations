@@ -90,6 +90,7 @@ savefig("activator.png")
 
 #Setup for simulation loop, parameters, summary statistics, and section of GFP time trace at steady state are stored during the loop
 sim_sumstats_list = Vector{Float64}[]
+simn_sumstats_list = Vector{Float64}[]
 sim_params_list = Vector{Float64}[]
 sim_GFP=Vector{Float64}[]
 @time for i in 1:10
@@ -112,8 +113,6 @@ sim_GFP=Vector{Float64}[]
     sol = solve(jprob, SSAStepper(); saveat=1/3) #changed to 0.333 hrs to match measured data
     GFP = sol[5,end-215:end]/1000000 #Changed to get values from indexes corresponding to past 1000hrs (steady state) now that there are 3x as many points saved in simulation output (only storing 216 data points) 
     
-
-    
     k1 = mean(GFP)
     k2 = var(GFP)
     k3 = mean((GFP.-k1).^3)
@@ -124,12 +123,29 @@ sim_GFP=Vector{Float64}[]
     pw = welch_pgram(GFP)
     ps = pw.power[2:11]
     params = Float64[ kOn_new, kOff_new, kTr_new, kTl_new]
-
     plot!(sol, idxs=5, label="GFP $i")
     push!(sim_GFP,GFP)
     push!(sim_params_list,params)
     sim_sumstats = Float64[k1,k2,k3,k4,k5,ps...,cv]
     push!(sim_sumstats_list,sim_sumstats)
+
+
+    #add noise
+    y=()
+    y = 0.0000492*(k1^2) + 0.0102*k1 + 0.0685
+    noise = y.*randn(216)
+    GFPN = GFP+noise
+    k1n = mean(GFPN)
+    k2n = var(GFPN)
+    k3n = mean((GFPN.-k1).^3)
+    k4n = mean((GFPN.-k1).^4) .- 3*k2^2
+    k5n = mean((GFPN.-k1).^5) - 10*k3*k2
+    slopen = ((GFPN[end]-GFPN[1])/(time[end]-time[1]))
+    cvn = k2/k1
+    pwn = welch_pgram(GFPN)
+    psn = pwn.power[2:11]
+    simn_sumstats = Float64[slopen,k1n,k2n,k3n,k4n,k5n,psn...,cvn]
+    push!(simn_sumstats_list,simn_sumstats)
 end
 
 plot!(legend=:false)
