@@ -76,7 +76,7 @@ rn = complete(rn);
 # Define and solve the problem
 dprob = DiscreteProblem(rn, u0, tspan, p);
 jprob = JumpProblem(rn, dprob, Direct(); save_positions = (false, false));
-@time sol = solve(jprob, SSAStepper(); saveat=0.02);
+@time sol = solve(jprob, SSAStepper(); saveat=1/3);
 
 states = unknowns(rn)
 params = parameters(rn)
@@ -92,7 +92,7 @@ savefig("activator.png")
 sim_sumstats_list = Vector{Float64}[]
 sim_params_list = Vector{Float64}[]
 sim_GFP=Vector{Float64}[]
-@time for i in 1:10
+@time for i in 1:100
     if (i % 100)==0
         println(i)
     end 
