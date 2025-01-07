@@ -15,23 +15,23 @@ tspan = (0.0, 2000);
 u0 = (DNAoff => 1, DNAon => 0, A => 1, B => 1, DNAonF => 0, RNA => 0, GFP => 0); #Changed to approximately level of GFP and RNA at steady state
 time = round.(collect(0:215).*0.33334, digits=2);
 
-p = (kOn => 0.00033*60*60, kOff => 0.00066*60*60,  kTr => 220, kTrOn => 0.00033*60*60, kTrOff => 0.00066*60*60, kTrF => 500, kTl => 425, dM => 0.75, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
+p = (kOn => 0.00033*60*60, kOff => 0.00033*60*60,  kTr => 50, kTrOn => 0.00033*60*60, kTrOff => 0.00033*60*60, kTrF => 500, kTl => 425, dM => 1, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
 ukOn = Normal(0.00033*60*60,0.2*0.00033*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
-ukOff = Normal(0.00066*60*60,0.2*0.00066*60*60)
+ukOff = Normal(0.00033*60*60,0.2*0.00033*60*60)
 ukTrOn = Normal(0.00033*60*60,0.2*0.00033*60*60)
-ukTrOff = Normal(0.00066*60*60, 0.2*0.00066*60*60)
-ukTr = Normal(310,150)
+ukTrOff = Normal(0.00033*60*60, 0.2*0.00033*60*60)
+#ukTr = Normal(310,150)
 # calculate gamma distribution for kTL with mean=310 and std=265
 g_scale = 80^2/425  #adjusted from 265^2/500
 g_shape = 425/g_scale
 ukTl = Gamma(g_shape,g_scale)
 
-kTr_g_scale = 60^2/220
-kTr_g_shape =220/kTr_g_scale
+kTr_g_scale = 20^2/50
+kTr_g_shape =50/kTr_g_scale
 ukTrg = Gamma(kTr_g_shape,kTr_g_scale)
 
-kTrF_g_scale = 100^2/600
-kTrF_g_shape = 600/kTr_g_scale
+kTrF_g_scale = 80^2/480
+kTrF_g_shape = 480/kTrF_g_scale
 ukTrFg = Gamma(kTrF_g_shape,kTrF_g_scale)
 
 kTr_x = 0:01:1000
@@ -86,8 +86,8 @@ dist_b_kTrF=[];
 for i in 1:1000
     # Generate a new sample
     kTl_new = bounded_sample(ukTl, max_value, min_value)
-    kTr_new = bounded_sample(ukTrg,325, 100)
-    kTrF_new = bounded_sample(ukTrFg,750, 325)
+    kTr_new = bounded_sample(ukTrg,100, 15)
+    kTrF_new = bounded_sample(ukTrFg,750, 200)
     push!(dist_b_kTl,kTl_new)
     push!(dist_b_kTr,kTr_new)
     push!(dist_b_kTrF,kTrF_new)
@@ -150,9 +150,9 @@ plot();
     kOff_new = rand(ukOff)
     kTrOn_new = rand(ukTrOn)
     kTrOff_new = rand(ukTrOff)
-    kTr_new = bounded_sample(ukTrg, 325, 100)
+    kTr_new = bounded_sample(ukTrg, 100, 15)
     kTl_new = bounded_sample(ukTl, max_value,min_value)
-    kTrF_new = bounded_sample(ukTrFg, 750, 250)
+    kTrF_new = bounded_sample(ukTrFg, 750, 200)
     new_prob = remake(dprob; p = (kOn => kOn_new,
                             kOff => kOff_new,
                             kTr => kTr_new,
@@ -212,7 +212,7 @@ params = reduce(vcat,transpose.(sim_params_list))
 
 
 
-jldsave("0_00033_0.75_noise_2DNABind_2.jld2"; sim_sumstats,simn_sumstats,params)
+jldsave("0_00033_0.75_noise_2DNABind_4.jld2"; sim_sumstats,simn_sumstats,params)
 
 #@unpack sumstatst,paramst = jldopen("bfc.jld2")
 #sim_sumstats = sumstatst
