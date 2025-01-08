@@ -15,10 +15,11 @@ tspan = (0.0, 2000);
 u0 = (DNAoff => 1, DNAon => 0, A => 1, B => 1, DNAonF => 0, RNA => 0, GFP => 0); #Changed to approximately level of GFP and RNA at steady state
 time = round.(collect(0:215).*0.33334, digits=2);
 
-p = (kOn => 0.00033*60*60, kOff => 0.00033*60*60,  kTr => 50, kTrOn => 0.00033*60*60, kTrOff => 0.00033*60*60, kTrF => 500, kTl => 425, dM => 1, dG => 0.00365) #parameter set for NO FEEDBACK Circuit
-ukOn = Normal(0.00033*60*60,0.2*0.00033*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
+p = (kOn => 0.0033*60*60, kOff => 0.00033*60*60,  kTr => 50, kTrOn => 0.0033*60*60, kTrOff => 0.00033*60*60, kTrF => 500, kTl => 425, dM => 1.25, dG => 0.00365) 
+param_string = join(["$key:$(round(value, digits=2))" for (key, value) in p], ", ")#parameter set for NO FEEDBACK Circuit
+ukOn = Normal(0.0033*60*60,0.2*0.0033*60*60) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
 ukOff = Normal(0.00033*60*60,0.2*0.00033*60*60)
-ukTrOn = Normal(0.00033*60*60,0.2*0.00033*60*60)
+ukTrOn = Normal(0.0033*60*60,0.2*0.0033*60*60)
 ukTrOff = Normal(0.00033*60*60, 0.2*0.00033*60*60)
 #ukTr = Normal(310,150)
 # calculate gamma distribution for kTL with mean=310 and std=265
@@ -26,8 +27,8 @@ g_scale = 80^2/425  #adjusted from 265^2/500
 g_shape = 425/g_scale
 ukTl = Gamma(g_shape,g_scale)
 
-kTr_g_scale = 20^2/50
-kTr_g_shape =50/kTr_g_scale
+kTr_g_scale = 47.5^2/70
+kTr_g_shape =70/kTr_g_scale
 ukTrg = Gamma(kTr_g_shape,kTr_g_scale)
 
 kTrF_g_scale = 80^2/480
@@ -86,7 +87,7 @@ dist_b_kTrF=[];
 for i in 1:1000
     # Generate a new sample
     kTl_new = bounded_sample(ukTl, max_value, min_value)
-    kTr_new = bounded_sample(ukTrg,100, 15)
+    kTr_new = bounded_sample(ukTrg,100, 0)
     kTrF_new = bounded_sample(ukTrFg,750, 200)
     push!(dist_b_kTl,kTl_new)
     push!(dist_b_kTr,kTr_new)
@@ -98,8 +99,11 @@ kTl_y = pdf.(ukTl,kTl_x)
 plot(kTl_x, kTl_y)
 histogram(dist_b_kTl,bins=200)
 
-histogram(dist_b_kTrF,bins=200,color=:blue)
-histogram!(dist_b_kTr,bins=200,color=:red)
+histogram(dist_b_kTrF,bins=200,color=:blue,label="kTrFast")
+histogram(dist_b_kTr,bins=200,color=:red,label="kTrSlow")
+
+histogram(dist_b_kTrF,bins=200,color=:blue,label="kTrFast")
+histogram!(dist_b_kTr,bins=200,color=:red,label="kTrSlow")
 # Define the reaction network
 rxs = [
     (@reaction kOn, DNAoff + A --> DNAon),
@@ -128,7 +132,7 @@ params = parameters(rn)
 GFP1 = sol[7,:][4500:4715]/1000000
 #plot GFP and RNA values of the simulation
 plot(sol, idxs=7, label="GFP")
-plot(GFP1)
+plot(GFP1, label=param_string)
 plot(sol, idxs=6,label="RNA")
 plot(sol, idxs=5,label="DNAonF",xlims=(1500,1572))
 plot(sol, idxs=4,label="DNAon",xlims=(1500,1572))
@@ -212,7 +216,7 @@ params = reduce(vcat,transpose.(sim_params_list))
 
 
 
-jldsave("0_00033_0.75_noise_2DNABind_4.jld2"; sim_sumstats,simn_sumstats,params)
+jldsave("0_0033_0_00033_1_25_noise_2DNABind_1.jld2"; sim_sumstats,simn_sumstats,params)
 
 #@unpack sumstatst,paramst = jldopen("bfc.jld2")
 #sim_sumstats = sumstatst
@@ -232,7 +236,7 @@ ex_GFP = GFPex[2:end,2:end]/1000000
 cols = size(ex_GFP,2);
 ex_sumstats_list = [];
 #plot experimental time traces
-plot(ex_GFP[:,2], legend=:false,xlabel="time points",ylabel="#GFP Molecules (10^6)") #,ylims=(0,80)
+plot(ex_GFP[:,9], legend=:false,xlabel="time points",ylabel="#GFP Molecules (10^6)") #,ylims=(0,80)
 
 #loop calculates summary statistics for experimental time traces exactly as performed on the simulated time traces
 for i in 1:cols
