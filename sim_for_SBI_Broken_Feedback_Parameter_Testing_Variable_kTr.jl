@@ -117,10 +117,10 @@ end
 kTl_x = 0:01:1000
 kTl_y = pdf.(ukTl,kTl_x)
 plot(kTl_x, kTl_y)
-histogram(dist_b_kTl,bins=200)
+histogram(dist_b_kTl,bins=200, color=:green,label="kTl",xlabel="kTl",ylabel="Count")
 
-histogram(dist_b_kTrF,bins=200,color=:blue,label="kTrFast")
-histogram(dist_b_kTr,bins=200,color=:red,label="kTrSlow")
+histogram(dist_b_kTrF,bins=200,color=:blue,label="kTrFast",xlabel="kTrFast",ylabel="Count",xlims=(0,800))
+histogram(dist_b_kTr,bins=200,color=:red,label="kTrSlow",xlabel="kTrSlow",ylabel="Count")
 
 histogram(dist_b_kTrF,bins=200,color=:blue,label="kTrFast")
 histogram!(dist_b_kTr,bins=200,color=:red,label="kTrSlow")

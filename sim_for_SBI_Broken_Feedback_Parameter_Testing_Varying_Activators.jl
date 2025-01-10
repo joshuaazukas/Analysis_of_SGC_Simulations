@@ -105,10 +105,10 @@ end
 kTl_x = 0:01:1000
 kTl_y = pdf.(ukTl,kTl_x)
 plot(kTl_x, kTl_y)
-histogram(dist_b_kTl,bins=200)
+histogram(dist_b_kTl,bins=200, color=:green,label="kTl",xlabel="kTl",ylabel="Count")
 
-histogram(dist_b_kTrF,bins=200,color=:blue,label="kTrFast")
-histogram(dist_b_kTr,bins=200,color=:red,label="kTrSlow")
+histogram(dist_b_kTrF,bins=200,color=:blue,label="kTrFast",xlabel="kTrFast",ylabel="Count",xlims=(0,800))
+histogram(dist_b_kTr,bins=200,color=:red,label="kTrSlow",xlabel="kTrSlow",ylabel="Count")
 
 histogram(dist_b_kTrF,bins=200,color=:blue,label="kTrFast")
 histogram!(dist_b_kTr,bins=200,color=:red,label="kTrSlow")
@@ -217,7 +217,9 @@ end
 plot!(legend=:false)
 plot(time,sim_GFP,legend=:false,xlabel="Time (hrs)",ylabel="#GFP Molecules (10^6)",yscale=:log10)
 plot(time,sim_GFP,legend=:false,xlabel="Time (hrs)",ylabel="#GFP Molecules (10^6)")
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/SimOutput.png")
 plot(time,simn_GFP,legend=:false,xlabel="Time (hrs)",ylabel="#GFP Molecules (10^6)")
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/SimOutputN.png")
 sim_sumstats=[];
 simn_sumstats=[];
 sim_sumstats = reduce(vcat,transpose.(sim_sumstats_list))
@@ -277,7 +279,7 @@ bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,1], normalize=:probability, color=:red, bins=bin_edges, alpha=0.5,label="Exp Slope")
 #histogram!(sim_sumstats[:,1],bins=6000,color=:grey,alpha=0.5,label="Sim Temp Means")
 histogram!(simn_sumstats[:,1], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Slope", ylabel="Probability", xlabel="Slope of GFP # (10^6)")
-#savefig(MeanHist_0_18xExp_vs_Sim_Broken.png)
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/SlopeHistExp_vs_Sim_Broken.png")
 
 #Mean
 min_edge = min(minimum(simn_sumstats[:,2]), minimum(ex_sumstats[:,2]))
@@ -285,197 +287,199 @@ max_edge = max(maximum(simn_sumstats[:,2]), maximum(ex_sumstats[:,2]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,2], color=:red, normalize=:probability,  bins=bin_edges, alpha=0.5, label="Exp Temp Mean")
 histogram!(simn_sumstats[:,2], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Mean", ylabel="Probability", xlabel="Temporal Mean of GFP # (10^6)") #,ylim=(0,0.125),xlim=(0,20)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/MeanHistExp_vs_Sim_Broken.png")
 # Variance
 min_edge = min(minimum(simn_sumstats[:,3]), minimum(ex_sumstats[:,3]))
 max_edge = max(maximum(simn_sumstats[:,3]), maximum(ex_sumstats[:,3]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,3], color=:red, normalize=:probability,  bins=bin_edges, alpha=0.5, label="Exp Temp Vars")
 histogram!(simn_sumstats[:,3], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Vars", ylabel="Probability", xlabel="Temporal Variance of GFP # (10^6)") #,ylim=(0,0.125),xlim=(0,20)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/VarHistExp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,3]), minimum(ex_sumstats[:,3]))
 max_edge = max(maximum(simn_sumstats[:,3]), maximum(ex_sumstats[:,3]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,3], color=:red, normalize=:probability,  bins=bin_edges, alpha=0.5, label="Exp Temp Vars")
 histogram!(simn_sumstats[:,3], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Vars", ylabel="Probability", xlabel="Temporal Variance of GFP # (10^6)",ylim=(0,0.125),xlim=(0,20))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/VarzHistExp_vs_Sim_Broken.png")
 # CV
 min_edge = min(minimum(simn_sumstats[:,17]), minimum(ex_sumstats[:,17]))
 max_edge = max(maximum(simn_sumstats[:,17]), maximum(ex_sumstats[:,17]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,17], color=:red, normalize=:probability,  bins=200, alpha=0.5, label="Exp Temp CV")
 histogram!(simn_sumstats[:,17], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Vars", ylabel="Probability", xlabel="Temporal CV of GFP # (10^6)")
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/CVExp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,17]), minimum(ex_sumstats[:,17]))
 max_edge = max(maximum(simn_sumstats[:,17]), maximum(ex_sumstats[:,17]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,17], color=:red, normalize=:probability,  bins=200, alpha=0.5, label="Exp Temp CV")
 histogram!(simn_sumstats[:,17], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim Temp Vars", ylabel="Probability", xlabel="Temporal CV of GFP # (10^6)",ylim=(0,0.175),xlim=(0,0.5))
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/CVzExp_vs_Sim_Broken.png")
 #k3 - skewness
 min_edge = min(minimum(simn_sumstats[:,4]), minimum(ex_sumstats[:,4]))
 max_edge = max(maximum(simn_sumstats[:,4]), maximum(ex_sumstats[:,4]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,4], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k3")
 histogram!(simn_sumstats[:,4], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k3", ylabel="Probability", xlabel="Skewness") #, ylim=(0,0.20), xlim=(-30,50)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/SkewExp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,4]), minimum(ex_sumstats[:,4]))
 max_edge = max(maximum(simn_sumstats[:,4]), maximum(ex_sumstats[:,4]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,4], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k3")
 histogram!(simn_sumstats[:,4], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k3", ylabel="Probability", xlabel="skewness", ylim=(0,0.20), xlim=(-30,50))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/SkewzExp_vs_Sim_Broken.png")
 #k4 - Kurtosis
 min_edge = min(minimum(simn_sumstats[:,5]), minimum(ex_sumstats[:,5]))
 max_edge = max(maximum(simn_sumstats[:,5]), maximum(ex_sumstats[:,5]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,5],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k4")
 histogram!(simn_sumstats[:,5], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k4", ylabel="Probability", xlabel="Kurtosis") #, ylim=(0,0.20), xlim=(-500,250)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/KurtExp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,5]), minimum(ex_sumstats[:,5]))
 max_edge = max(maximum(simn_sumstats[:,5]), maximum(ex_sumstats[:,5]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,5],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k4")
 histogram!(simn_sumstats[:,5], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k4", ylabel="Probability", xlabel="Kurtosis", ylim=(0,0.20), xlim=(-500,250))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/KurtzExp_vs_Sim_Broken.png")
 #k5
 min_edge = min(minimum(simn_sumstats[:,6]), minimum(ex_sumstats[:,6]))
 max_edge = max(maximum(simn_sumstats[:,6]), maximum(ex_sumstats[:,6]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,6],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k5")
 histogram!(simn_sumstats[:,6], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k5", ylabel="Probability", xlabel="5th Cumulant") #, ylim=(0,0.20),xlim=(-10000,5000)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/K5Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,6]), minimum(ex_sumstats[:,6]))
 max_edge = max(maximum(simn_sumstats[:,6]), maximum(ex_sumstats[:,6]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,6],  color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k5")
 histogram!(simn_sumstats[:,6], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k5", ylabel="Probability", xlabel="5th Cumulant", ylim=(0,0.20),xlim=(-10000,5000))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/K5zExp_vs_Sim_Broken.png")
 #power spectrum
 min_edge = min(minimum(simn_sumstats[:,7]), minimum(ex_sumstats[:,7]))
 max_edge = max(maximum(simn_sumstats[:,7]), maximum(ex_sumstats[:,7]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,7], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k6")
 histogram!(simn_sumstats[:,7], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k6", ylabel="Probability", xlabel="k6") #, ylim=(0,0.085),xlim=(0,10)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS1Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,7]), minimum(ex_sumstats[:,7]))
 max_edge = max(maximum(simn_sumstats[:,7]), maximum(ex_sumstats[:,7]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,7], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k6")
 histogram!(simn_sumstats[:,7], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k6", ylabel="Probability", xlabel="k6", ylim=(0,0.085),xlim=(0,10))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS1zExp_vs_Sim_Broken.png")
 
 min_edge = min(minimum(simn_sumstats[:,8]), minimum(ex_sumstats[:,8]))
 max_edge = max(maximum(simn_sumstats[:,8]), maximum(ex_sumstats[:,8]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,8], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k7")
 histogram!(simn_sumstats[:,8], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k7", ylabel="Probability", xlabel="k7") #, ylim=(0,0.1),xlim=(0,3)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS2Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,8]), minimum(ex_sumstats[:,8]))
 max_edge = max(maximum(simn_sumstats[:,8]), maximum(ex_sumstats[:,8]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,8], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k7")
 histogram!(simn_sumstats[:,8], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k7", ylabel="Probability", xlabel="k7", ylim=(0,0.1),xlim=(0,3))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS2zExp_vs_Sim_Broken.png")
 
 min_edge = min(minimum(simn_sumstats[:,9]), minimum(ex_sumstats[:,9]))
 max_edge = max(maximum(simn_sumstats[:,9]), maximum(ex_sumstats[:,9]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,9], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k8")
 histogram!(simn_sumstats[:,9], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k8", ylabel="Probability", xlabel="k8") #, ylim=(0,0.1),xlim=(0,2.25)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS3Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,9]), minimum(ex_sumstats[:,9]))
 max_edge = max(maximum(simn_sumstats[:,9]), maximum(ex_sumstats[:,9]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,9], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k8")
 histogram!(simn_sumstats[:,9], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k8", ylabel="Probability", xlabel="k8", ylim=(0,0.1),xlim=(0,2.25))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS3zExp_vs_Sim_Broken.png")
 
 min_edge = min(minimum(simn_sumstats[:,10]), minimum(ex_sumstats[:,10]))
 max_edge = max(maximum(simn_sumstats[:,10]), maximum(ex_sumstats[:,10]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,10], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k9")
 histogram!(simn_sumstats[:,10], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k9", ylabel="Probability", xlabel="k9") #, ylim=(0,0.1),xlim=(0,1.75)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS4Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,10]), minimum(ex_sumstats[:,10]))
 max_edge = max(maximum(simn_sumstats[:,10]), maximum(ex_sumstats[:,10]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,10], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k9")
 histogram!(simn_sumstats[:,10], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k9", ylabel="Probability", xlabel="k9", ylim=(0,0.1),xlim=(0,1.75))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS4zExp_vs_Sim_Broken.png")
 
 min_edge = min(minimum(simn_sumstats[:,11]), minimum(ex_sumstats[:,11]))
 max_edge = max(maximum(simn_sumstats[:,11]), maximum(ex_sumstats[:,11]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,11], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k10")
 histogram!(simn_sumstats[:,11], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k10", ylabel="Probability", xlabel="k10") #, ylim=(0,0.1),xlim=(0,1.75)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS5Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,11]), minimum(ex_sumstats[:,11]))
 max_edge = max(maximum(simn_sumstats[:,11]), maximum(ex_sumstats[:,11]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,11], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k10")
 histogram!(simn_sumstats[:,11], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k10", ylabel="Probability", xlabel="k10", ylim=(0,0.1),xlim=(0,1.75))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS5zExp_vs_Sim_Broken.png")
 
 min_edge = min(minimum(simn_sumstats[:,12]), minimum(ex_sumstats[:,12]))
 max_edge = max(maximum(simn_sumstats[:,12]), maximum(ex_sumstats[:,12]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,12], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k11")
 histogram!(simn_sumstats[:,12], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k11", ylabel="Probability", xlabel="k11") #, ylim=(0,0.225),xlim=(0,3)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS6Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,12]), minimum(ex_sumstats[:,12]))
 max_edge = max(maximum(simn_sumstats[:,12]), maximum(ex_sumstats[:,12]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,12], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k11")
 histogram!(simn_sumstats[:,12], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k11", ylabel="Probability", xlabel="k11", ylim=(0,0.225),xlim=(0,3))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS6zExp_vs_Sim_Broken.png")
 
 min_edge = min(minimum(simn_sumstats[:,13]), minimum(ex_sumstats[:,13]))
 max_edge = max(maximum(simn_sumstats[:,13]), maximum(ex_sumstats[:,13]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,13], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k12")
 histogram!(simn_sumstats[:,13], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k12", ylabel="Probability", xlabel="k12") #, ylim=(0,0.175),xlim=(0,1.25)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS7Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,13]), minimum(ex_sumstats[:,13]))
 max_edge = max(maximum(simn_sumstats[:,13]), maximum(ex_sumstats[:,13]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,13], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k12")
 histogram!(simn_sumstats[:,13], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k12", ylabel="Probability", xlabel="k12", ylim=(0,0.175),xlim=(0,1.25))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS7zExp_vs_Sim_Broken.png")
 
 min_edge = min(minimum(simn_sumstats[:,14]), minimum(ex_sumstats[:,14]))
 max_edge = max(maximum(simn_sumstats[:,14]), maximum(ex_sumstats[:,14]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,14], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k13")
 histogram!(simn_sumstats[:,14], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k13", ylabel="Probability", xlabel="k13") #, ylim=(0,0.175),xlim=(0,1.25)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS8Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,14]), minimum(ex_sumstats[:,14]))
 max_edge = max(maximum(simn_sumstats[:,14]), maximum(ex_sumstats[:,14]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,14], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k13")
 histogram!(simn_sumstats[:,14], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k13", ylabel="Probability", xlabel="k13", ylim=(0,0.175),xlim=(0,1.25))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS8zExp_vs_Sim_Broken.png")
 
 min_edge = min(minimum(simn_sumstats[:,15]), minimum(ex_sumstats[:,15]))
 max_edge = max(maximum(simn_sumstats[:,15]), maximum(ex_sumstats[:,15]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,15], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k14")
 histogram!(simn_sumstats[:,15], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k14", ylabel="Probability", xlabel="k14") #, ylim=(0,0.185),xlim=(0,1.85)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS9Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,15]), minimum(ex_sumstats[:,15]))
 max_edge = max(maximum(simn_sumstats[:,15]), maximum(ex_sumstats[:,15]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,15], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label="Exp k14")
 histogram!(simn_sumstats[:,15], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k14", ylabel="Probability", xlabel="k14", ylim=(0,0.185),xlim=(0,1.85))
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS9zExp_vs_Sim_Broken.png")
 
 min_edge = min(minimum(simn_sumstats[:,16]), minimum(ex_sumstats[:,16]))
 max_edge = max(maximum(simn_sumstats[:,16]), maximum(ex_sumstats[:,16]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,16], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label=" Exp k15")
 histogram!(simn_sumstats[:,16], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k15", ylabel="Probability", xlabel="k15") #, ylim=(0,0.225),xlim=(0,2)
-
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS10Exp_vs_Sim_Broken.png")
 min_edge = min(minimum(simn_sumstats[:,16]), minimum(ex_sumstats[:,16]))
 max_edge = max(maximum(simn_sumstats[:,16]), maximum(ex_sumstats[:,16]))
 bin_edges = range(min_edge, max_edge, length=bins)
 histogram(ex_sumstats[:,16], color=:red, normalize=:probability, bins=bin_edges, alpha=0.5, label=" Exp k15")
 histogram!(simn_sumstats[:,16], color=:grey, normalize=:probability, bins=bin_edges, alpha=0.5, label="Sim k15", ylabel="Probability", xlabel="k15", ylim=(0,0.4),xlim=(0,2))
+savefig("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_1/PS10zExp_vs_Sim_Broken.png")
