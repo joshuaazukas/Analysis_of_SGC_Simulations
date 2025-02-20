@@ -181,7 +181,7 @@ slope = ((GFP1[end]-GFP1[1])/(time[end]-time[1]))
 
 #setup for Noise Addition
 # Estimate the joint KDE
-file_path = "C://Users//Strey Lab//Documents//GitHub//Analysis_of_SGC_Simulations//StreyCats//Broken Feedback Circuit//mean_vs_noise_std.xlsx" #this data is important for adding noise to simulations
+file_path = "C://Users//jsazu//Documents//GitHub//Analysis_of_SGC_Simulations//StreyCats//Broken Feedback Circuit//mean_vs_noise_std.xlsx" #this data is important for adding noise to simulations
 data = XLSX.readxlsx(file_path);
 sheet = data["Sheet1"];
 u = sheet[2:end, 1];
@@ -219,9 +219,9 @@ sim_params_list = Vector{Float64}[];
 sim_GFP=Vector{Float64}[];
 simn_GFP=Vector{Float64}[];
 plot();
-dir_path = "C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/VaryAct_10/" #path to save data and figures
+dir_path = "C:/Users/jsazu/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/VaryAct_10_2/" #path to save data and figures
 
-@time for i in 1:10
+@time for i in 1:1000
     if (i % 100)==0
         println(i)
     end 
@@ -298,15 +298,15 @@ plot(time,simn_GFP,legend=:false,xlabel="Time (hrs)",ylabel="#GFP Molecules (10^
 savefig(joinpath(dir_path, "SimOutputN.png"))
 sim_sumstats=[];
 simn_sumstats=[];
-sim_sumstats = reduce(vcat,transpose.(sim_sumstats_list))
-simn_sumstats = reduce(vcat,transpose.(simn_sumstats_list))
+sim_sumstats = reduce(vcat,transpose.(sim_sumstats_list));
+simn_sumstats = reduce(vcat,transpose.(simn_sumstats_list));
 params = reduce(vcat,transpose.(sim_params_list));
-jldsave(joinpath(dir_path,"noise_2kTr_10.jld2"); sim_sumstats,simn_sumstats,params) # save simulation summary stats w/o noise, w noise, and parameters for each trace
+jldsave(joinpath(dir_path,"noise_2kTr_10_2.jld2"); sim_sumstats,simn_sumstats,params) # save simulation summary stats w/o noise, w noise, and parameters for each trace
 
 sim_GFP_v = reduce(hcat,sim_GFP);
 simn_GFP_v = reduce(hcat,simn_GFP)
-jldsave(joinpath(dir_path,"noise_2kTr_10_sim_GFP.jld2"); sim_GFP_v) # save traces w/o noise
-jldsave(joinpath(dir_path,"noise_2kTr_10_sinm_GFP.jld2"); simn_GFP_v) # save traces w noise added
+jldsave(joinpath(dir_path,"noise_2kTr_10_2_sim_GFP.jld2"); sim_GFP_v) # save traces w/o noise
+jldsave(joinpath(dir_path,"noise_2kTr_10_2_sinm_GFP.jld2"); simn_GFP_v) # save traces w noise added
 #Show Distributions of parameters
 histogram(params[:,1], bins=200,xlabel="kOnA",ylabel="counts",label="Mean:$(round(mean(params[:,1]), digits=2))")
 savefig(joinpath(dir_path, "kOn.png"))

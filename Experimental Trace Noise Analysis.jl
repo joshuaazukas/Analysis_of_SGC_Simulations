@@ -44,6 +44,18 @@ fft_result = fft(example_GFP)
 freqs = fftfreq(length(time), 0.00083333)
 plot(freqs[1:div(end,2)], abs.(fft_result[1:div(end,2)]), xlabel="Frequency (Hz)", ylabel="Magnitude", label="Frequency Spectrum")
 
+Bkg = XLSX.readxlsx("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Background/Background Traces.xlsx");
+Cors = Bkg["Con3_Cor"];
+OGs = Bkg["OG #GFP"];
+time = round.(collect(0:215).*0.33334, digits=2);
+Cor = Cors[:];
+OG = OGs[:];
+#plot Raw Data
+Cols = size(Cor,2);
+Cols
+
+
+
 #Load all experimental data and produce a plot
 BFC_GFP = XLSX.readxlsx("C:/Users/Strey Lab/Documents/GitHub/Analysis_of_SGC_Simulations/StreyCats/Broken Feedback Circuit/Broken Feedback Circuit Time Traces 5_21_24 GFP.xlsx");
 GFPex = BFC_GFP["Sheet1"];
@@ -52,6 +64,7 @@ time = round.(GFPex[2:end,1].*0.33334, digits=2)
 ex_GFP = GFPex[2:end,2:end]/1000000
 plot(time,ex_GFP,legend=:false)
 cols = size(ex_GFP,2);
+ex_GFP_m = mean(ex_GFP, dims=2)
 #calculate the temporal standard deviation for prefiltered experimental time traces
 exp_temp_std = []
 for i in 1:cols
@@ -59,7 +72,19 @@ for i in 1:cols
     push!(exp_temp_std,exp_stdGFP)
 end
 histogram(exp_temp_std, bins=30, normed=:probability)
+plot();
+fft_res_list = [];
+for i in 1:cols
+    fft_result = fft(ex_GFP[:,i])
+    freqs = fftfreq(length(time), 0.00083333)
+    push!(fft_res_list, fft_result)
+    plot!(freqs[1:div(end,2)], abs.(fft_result[1:div(end,2)]), xlabel="Frequency (Hz)", ylabel="Magnitude", label="Frequency Spectrum")
+end
+plot!(yscale=:log10,legend=:false)
 
+fft_res_l = reduce(hcat,fft_res_list)
+fft_res_m = mean(fft_res_l,dims=2)
+plot(freqs[1:div(end,2)], abs.(fft_res_m[1:div(end,2)]), xlabel="Frequency (Hz)", ylabel="Magnitude", label="Frequency Spectrum",yscale=:log10)
 #determine the number of columns/samples in the data
 cols = size(ex_GFP,2);
 #define frequency and filter (repeated from above)
@@ -120,6 +145,7 @@ histogram!(exp_temp_std, bins=30, normed=:probability,color="red",alpha=0.5,labe
 scatter(GFP_exp_temp_u,GFP_noise_std,xlabel="Temporal Mean Experimental Traces (# GFP x10^6)", ylabel="standard deviation of lowpass filtered\ndata subtracted experimental traces",legend=:false)
 #plot the standard deviation of the noise against the log10 transformed temporal mean of the experimental data
 scatter(log10.(GFP_exp_temp_u),log10.(GFP_noise_std),xlabel="Temporal Mean Experimental Traces (# GFP x10^6)", ylabel="standard deviation of lowpass filtered\ndata subtracted experimental traces",legend=:false)
+
 
 #save the data as a 
 #df = DataFrame(u=GFP_exp_temp_u,std=GFP_noise_std)

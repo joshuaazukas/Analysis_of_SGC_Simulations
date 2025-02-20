@@ -6,8 +6,8 @@ using SciMLStructures: Tunable, replace, replace!
 using JLD2, UnPack
 using XLSX
 using GLM
-
-NInd_data = XLSX.readxlsx("Z:/Single Cell Imaging/3_21_24_NR_MutNLS/20240321_185008_286/C1 - NRo Cont/NRo Non-Induced  Image analysis Data/Compiled Data Comparison/NR Noninduced Single Cell Traces 3_21_24 C1.xlsx");
+#Z:/Single Cell Imaging/Nonind NR Comp/NR_ssNon_Comp.xlsx
+NInd_data = XLSX.readxlsx("Z:/Single Cell Imaging/Nonind NR Comp/NR_ssNon_Comp.xlsx");
 NInd_GFP = NInd_data["#GFP"];
 NInd_GFP = NInd_GFP[:];
 NInd_GFP = NInd_GFP[2:end,1:end]/1000000;
@@ -23,9 +23,9 @@ plot(freqs1[1:div(end,2)], abs.(fft_result1[1:div(end,2)]), xlabel="Frequency (H
 
 lp = Lowpass(0.000085, fs=0.00083333)
 dmeth = Butterworth(2)
-filt_GFP1 = filtfilt(digitalfilter(lp,dmeth), HInd_GFP[:,1]*1000000)
+filt_GFP1 = filtfilt(digitalfilter(lp,dmeth), NInd_GFP[:,1]*1000000)
 plot(time,filt_GFP1, label="Filtered GFP",color=:black)
-plot!(time,HInd_GFP[:,1]*1000000, label="Raw GFP", xlabel="Time (Hrs)", ylabel="# of GFP molecules", color=:green)
+plot!(time,NInd_GFP[:,1]*1000000, label="Raw GFP", xlabel="Time (Hrs)", ylabel="# of GFP molecules", color=:green)
 plot();
 
 for i in 1:cols
@@ -82,5 +82,5 @@ plot(time,filt_NInd_mCh_d,legend=:false)
 filt_mCh_traces = Float64.(DataFrame([Symbol("Col$i") => vec for (i, vec) in enumerate(filt_NInd_mCh_d*1000000)]))
 filt_GFP_traces = Float64.(DataFrame([Symbol("Col$i") => vec for (i, vec) in enumerate(filt_NInd_GFP_d*1000000)]))
 
-CSV.write("Z:/Single Cell Imaging/3_21_24_NR_MutNLS/20240321_185008_286/C1 - NRo Cont/NRo Non-Induced  Image analysis Data/Compiled Data Comparison/filt_#mCh.csv", filt_mCh_traces)
-CSV.write("Z:/Single Cell Imaging/3_21_24_NR_MutNLS/20240321_185008_286/C1 - NRo Cont/NRo Non-Induced  Image analysis Data/Compiled Data Comparison/filt_#GFP.csv", filt_GFP_traces)
+CSV.write("Z:/Single Cell Imaging/Nonind NR Comp/filt_#mCh.csv", filt_mCh_traces)
+CSV.write("Z:/Single Cell Imaging/Nonind NR Comp/filt_#GFP.csv", filt_GFP_traces)
