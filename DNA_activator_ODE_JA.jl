@@ -133,7 +133,7 @@ t = round.(collect(0:215).*0.33334, digits=2)
     kTr_new = bounded_sample(ukTrg, 1250, 100)
     kTl_new = bounded_sample(ukTl, max_value,min_value)
     dG_new = bounded_sample_min0(udG_ln)
-    u0RNA_new = kOn_new/(kOn_new+kOff_new)*kTr_new
+    u0RNA_new = kOn_new/(kOn_new+kOff_new)*kTr_new/dM
     u0GFP_new = kTl_new*u0RNA_new/dG_new
     u0_new = [0,u0RNA_new,u0GFP_new]
     p1 = (kOn = kOn_new,kOff = kOff_new,kTr = kTr_new,kTl = kTl_new,dG = dG_new, dM = dM)
