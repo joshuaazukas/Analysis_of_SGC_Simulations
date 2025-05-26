@@ -10,19 +10,19 @@ using Statistics, StatsBase
 using JLD2, UnPack
 
 rate1(u, p, t) = p.kOn1 * (1-u[1]) + p.kOff1 * u[1]
-rate2(u, p, t) = p.kOn2 * (1-u[2]) + p.kOff2 * u[2]
+rate2(u, p, t) = p.kOn2 *u[4] * (1-u[2]) + p.kOff2 * u[2]
 affect1!(integrator) = (integrator.u[1] = (integrator.u[1] + 1 ) % 2)
 affect2!(integrator) = (integrator.u[2] = (integrator.u[2] + 1 ) % 2)
 crj1 = ConstantRateJump(rate1, affect1!)
-crj2 = ConstantRateJump(rate2, affect2!)
+crj2 = VariableRateJump(rate2, affect2!)
 dM=1.5
-p = (kOn1 = 0.35, kOff1 = 0.5, kOn2 = 0.1, kOff2 = 0.3, kTr1 =300, kTr2 = 50, kTl = 900, dM = dM, dG = 0.00365)
+p = (kOn1 = 0.35, kOff1 = 0.5, kOn2 = 0.1, kOff2 = 0.3, kTr =300, kTr_leak = 5, kTl = 900, dM = dM, dG = 0.00365)
 tspan = (0.0, 2000.0)
 
 function f!(du, u, p, t)
     du[1] = 0
     du[2] = 0
-    du[3] = (p.kTr1 + pkTr2*u[2])*u[1] - p.dM*u[3]
+    du[3] = p.kTr*u[1]*(1-u[2]) + kTr_leak - p.dM*u[3]
     du[4] = p.kTl*u[3] - p.dG*u[4]
     nothing
 end
