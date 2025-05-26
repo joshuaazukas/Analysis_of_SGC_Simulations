@@ -16,13 +16,13 @@ affect2!(integrator) = (integrator.u[2] = (integrator.u[2] + 1 ) % 2)
 crj1 = ConstantRateJump(rate1, affect1!)
 crj2 = VariableRateJump(rate2, affect2!)
 dM=1.5
-p = (kOn1 = 0.35, kOff1 = 0.5, kOn2 = 0.1, kOff2 = 0.3, kTr =300, kTr_leak = 5, kTl = 900, dM = dM, dG = 0.00365)
+p = (kOn1 = 0.35, kOff1 = 0.5, kOn2 = 0.0001, kOff2 = 0.3, kTr =300, kTr_leak = 5, kTl = 900, dM = dM, dG = 0.00365)
 tspan = (0.0, 2000.0)
 
 function f!(du, u, p, t)
     du[1] = 0
     du[2] = 0
-    du[3] = p.kTr*u[1]*(1-u[2]) + kTr_leak - p.dM*u[3]
+    du[3] = p.kTr*u[1]*(1-u[2]) + p.kTr_leak - p.dM*u[3]
     du[4] = p.kTl*u[3] - p.dG*u[4]
     nothing
 end
@@ -36,6 +36,7 @@ joprob = JumpProblem(oprob, Direct(), crj1, crj2)
 @time sol = solve(joprob, Tsit5(),saveat=0.333)
 plot(sol[1,:], label = ["DNAA(t)"], xlabel = "t")
 plot(sol[2,:], label = ["DNA(t)"], xlabel = "t")
+plot(sol[1,:] .* (1 .- sol[2,:]),label = ["production on"],xlabel = "t")
 plot(sol[3,:], label = ["RNA"], xlabel = "t")
 plot(sol[4,:][end-215:end]/1000000,label = ["GFP"], xlabel = "t")
 ukOn = Normal(0.35,0.5*0.35) # standard deviation raised to 20%. estimated from Suter et al. paper that used/measured kon and koff values (no reported standard deviation)
